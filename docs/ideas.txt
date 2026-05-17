@@ -101,6 +101,7 @@ Cross-encoder reranker
 microsoft/deberta-v3-base
 RoBERTa-base
 RoBERTa-large Batch 8 + gradient accumulation 2
+deberta-v3-large
 
 Có thể đổi sang model lớn hơn như DeBERTa/RoBERTa-large cross-encoder hoặc SciBERT-like larger encoder nếu có. 
 Ý nghĩa: kiểm tra trade-off capacity vs quality. Nhưng với 1-2 GPU T4 và dataset SciFact nhỏ, model quá lớn dễ overfit và train lâu.

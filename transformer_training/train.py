@@ -237,7 +237,8 @@ def train(config: dict) -> None:
     ]
     
     learning_rate = float(config.get("learning_rate", 2e-5))
-    optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=learning_rate)
+    adam_epsilon = float(config.get("adam_epsilon", 1e-8))
+    optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
     total_steps = max(len(train_loader) * int(config.get("num_epochs", 3)), 1)
     warmup_steps = int(total_steps * float(config.get("warmup_ratio", 0.06)))
     scheduler = get_linear_schedule_with_warmup(optimizer, warmup_steps, total_steps)

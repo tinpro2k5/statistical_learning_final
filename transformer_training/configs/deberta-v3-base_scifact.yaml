@@ -14,7 +14,8 @@ max_length: 512
 # ----- Training Hyperparameters -----
 seed: 42
 batch_size: 16
-learning_rate: 2e-5
+learning_rate: 3e-6
+adam_epsilon: 1e-6
 num_epochs: 3
 warmup_ratio: 0.1
 label_smoothing: 0.1

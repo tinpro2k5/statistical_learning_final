@@ -1,0 +1,27 @@
+{
+  "task": "document_reranking",
+  "model_name_or_path": "microsoft/deberta-v3-base",
+  "num_labels": 2,
+  "ignore_mismatched_sizes": true,
+  "train_file": "../data/scifact/train.jsonl",
+  "validation_file": "../data/scifact/validation.jsonl",
+  "test_file": "../data/scifact/test.jsonl",
+  "output_dir": "outputs/reranking_scifact_deberta",
+  "max_length": 512,
+  "seed": 42,
+  "batch_size": 16,
+  "learning_rate": "3e-6",
+  "adam_epsilon": "1e-6",
+  "num_epochs": 3,
+  "warmup_ratio": 0.1,
+  "label_smoothing": 0.1,
+  "logging_steps": 50,
+  "eval_steps": 200,
+  "save_steps": 200,
+  "field_map": {
+    "query": "query",
+    "title": "title",
+    "abstract": "abstract",
+    "label": "label"
+  }
+}
