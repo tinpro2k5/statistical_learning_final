@@ -1,0 +1,32 @@
+task: "document_reranking"
+model_name_or_path: "roberta-base"
+num_labels: 2
+ignore_mismatched_sizes: true
+
+# ----- Data -----
+train_file:      ../data/combined/train.jsonl
+validation_file: ../data/combined/validation.jsonl
+test_file:       ../data/combined/test.jsonl
+
+output_dir: "outputs/roberta_combined"
+max_length: 512
+
+# ----- Training Hyperparameters -----
+seed: 42
+batch_size: 16
+learning_rate: 2e-5
+num_epochs: 3
+warmup_ratio: 0.1
+label_smoothing: 0.1
+
+# ----- Logging & Evaluation -----
+# Tăng eval_steps lên 500 vì bộ combined khá lớn, giúp train nhanh hơn
+logging_steps: 100
+eval_steps: 500
+save_steps: 500
+
+field_map:
+  query: "query"
+  title: "title"
+  abstract: "abstract"
+  label: "label"
