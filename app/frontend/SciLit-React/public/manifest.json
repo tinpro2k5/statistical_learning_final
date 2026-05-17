@@ -1,0 +1,9 @@
+{
+  "short_name": "SciLit",
+  "name": "SciLit Transformer App",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#17494d",
+  "background_color": "#f4efe8"
+}

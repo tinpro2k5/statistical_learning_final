@@ -1,0 +1,116 @@
+Version 2
+đọc PDF resume,
+chunking,
+skill extraction,
+multilingual,
+hard negative mining,
+fine-tuning,
+evaluation metrics.
+Version 3
+hybrid retrieval:
+BM25 + embedding.
+structured scoring.
+LLM explanation:
+“Why matched?”
+
+
+
+Embedding retrieval
++
+Rules
++
+NER
++
+Skill extraction
++
+Knowledge graph
++
+LLM reasoning
++
+Reranking
+
+----------------------
+Resume
+   ↓
+Parsing
+   ↓
+NER / Skill Extraction
+   ↓
+Embedding Retrieval
+   ↓
+Candidate Retrieval
+   ↓
+Cross-Encoder Reranking
+   ↓
+LLM Reasoning
+   ↓
+Final Recommendation
+
+
+
+Multi-hop reasoning	A→B→C
+Temporal reasoning	timeline
+Numerical reasoning	years of experience
+Constraint reasoning	must have X
+Causal reasoning	because
+Planning	sequence decisions
+
+
+
+
+thêm 1 lớp db retrival giữa 
+
+Bi-encoder retrieval
+    ↓ top 100
+Cross-encoder reranker
+    ↓ top 5
+LLM
+
+
+Flow thường là:
+
+Documents
+   ↓
+Bi-encoder / embedding transformer
+   ↓
+Vectors
+   ↓
+Vector DB / FAISS / HNSW
+
+Rồi khi query:
+
+Query
+  ↓
+Bi-encoder
+  ↓
+Query vector
+  ↓
+Nearest Neighbor Search
+  ↓
+Top-k docs
+
+
+SciBERT embedding
+    ↓
+FAISS retrieval
+    ↓
+Cross-encoder reranker
+
+
+allenai/scibert_scivocab_uncased
+cross-encoder/ms-marco-MiniLM-L-6-v2
+
+
+Có thể đổi sang model lớn hơn như DeBERTa/RoBERTa-large cross-encoder hoặc SciBERT-like larger encoder nếu có. Ý nghĩa: kiểm tra trade-off capacity vs quality. Nhưng với 1-2 GPU T4 và dataset SciFact nhỏ, model quá lớn dễ overfit và train lâu. Cho đồ án, SciBERT base là đẹp nhất.
+
+https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/scidocs.zip?utm_source=chatgpt.com
+
+1. Vũ khí tối thượng: Đổi chiến thuật Negative Sampling (Hard Negatives)
+Vấn đề: Hiện tại preprocess_data.py đang random bốc đại các tài liệu sai để ghép với câu hỏi. Những tài liệu này quá dễ để nhận biết là sai, dẫn đến model học rất lười và điểm thực tế rất thấp.
+Cách cứu: Đổi chiến thuật từ "Random Negatives" sang "Hard Negatives". Nghĩa là dùng thuật toán BM25 tìm ra top 100 tài liệu rất giống câu hỏi (chứa nhiều từ khóa chung) nhưng thực ra lại là tài liệu sai. Ép model phải phân biệt được những cặp "gần giống nhau" này. (Thay đổi này nằm ở code tiền xử lý dữ liệu, mang lại hiệu quả tăng vọt).
+4. Đóng băng các lớp (Layer Freezing)
+Vấn đề: SciBERT có tới 12 lớp (layers). Việc bắt tập data nhỏ xíu của bạn phải cập nhật toàn bộ hàng trăm triệu tham số cùng lúc rất dễ gây "phá hủy" kiến thức nền của SciBERT.
+Cách cứu: Bổ sung vài dòng code vào train.py để Freeze (đóng băng) 6 lớp đầu tiên. Chỉ cho phép mô hình học và cập nhật 6 lớp cuối cùng và lớp phân loại (Classification Head). Cách này vừa chống overfit cực tốt vừa giảm 1/2 lượng RAM cần dùng.
+5. Đổi Learning Rate Scheduler
+Vấn đề: Hiện tại code đang dùng linear_schedule (learning rate giảm từ từ theo đường thẳng). Đôi khi loss bị kẹt (không giảm nữa) dù mới chạy được nửa đường.
+Cách cứu: Đổi sang dùng cosine_schedule. Nó cho phép learning rate lượn sóng, giúp model dễ "bật" ra khỏi các vùng bế tắc (local minima).

@@ -1,0 +1,39 @@
+# ============================================================
+# Task config: Citation Generation (T5)
+# Run:
+#   python train.py --config configs/citation_generation.yaml
+# ============================================================
+
+task: citation_generation
+
+# ----- Model -----
+model_name_or_path: scieditor/citation-generation-t5
+
+# ----- Data -----
+train_file:      ../data/citation_generation/train.jsonl
+validation_file: ../data/citation_generation/validation.jsonl
+test_file:       ../data/citation_generation/test.jsonl
+
+# Optional field remapping
+# field_map:
+#   target: reference_sentence
+
+# ----- Tokenization -----
+max_source_length: 512
+max_target_length: 96
+
+# ----- Generation (eval only) -----
+num_beams: 4
+
+# ----- Training -----
+num_epochs: 3
+batch_size: 4
+eval_batch_size: 4
+learning_rate: 5.0e-5
+warmup_ratio: 0.06
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+seed: 42
+
+# ----- Output -----
+output_dir: outputs/citation_generation

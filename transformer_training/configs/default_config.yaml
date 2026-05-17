@@ -1,0 +1,25 @@
+# ============================================================
+# Default / shared training configuration
+# Edit task-specific configs to override individual keys.
+# ============================================================
+
+# ----- Training loop -----
+num_epochs: 3
+batch_size: 8
+eval_batch_size: 16
+learning_rate: 2.0e-5
+warmup_ratio: 0.06
+gradient_accumulation_steps: 1
+max_grad_norm: 1.0
+validation_ratio: 0.1    # used only when validation_file is not provided
+seed: 42
+
+# ----- Model / tokenizer -----
+num_labels: 2            # only for classification tasks
+ignore_mismatched_sizes: true
+
+# ----- Runtime -----
+no_cuda: false
+
+# ----- Output -----
+output_dir: outputs/model

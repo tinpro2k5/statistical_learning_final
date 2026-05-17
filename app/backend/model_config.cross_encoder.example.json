@@ -1,0 +1,12 @@
+{
+  "search_model": {
+    "enabled": true,
+    "kind": "cross_encoder",
+    "model_name_or_path": "outputs/document_reranking/best_checkpoint",
+    "device": "auto",
+    "max_length": 512,
+    "batch_size": 16,
+    "query_template": "keywords: {keywords} text before citation: {query}",
+    "candidate_template": "title: {title} abstract: {abstract}"
+  }
+}

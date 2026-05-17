@@ -1,0 +1,12 @@
+{
+  "search_model": {
+    "enabled": true,
+    "kind": "bert_nsp",
+    "model_name_or_path": "scieditor/document-reranking-scibert",
+    "device": "auto",
+    "max_length": 512,
+    "batch_size": 16,
+    "query_template": "keywords: {keywords} text before citation: {query}",
+    "candidate_template": "title: {title} abstract: {abstract}"
+  }
+}
