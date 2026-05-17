@@ -1,6 +1,7 @@
 task: "document_reranking"
 model_name_or_path:  "allenai/scibert_scivocab_uncased"
-
+num_labels: 2
+ignore_mismatched_sizes: true
 # ----- Data -----
 train_file:      ../data/scidocs/train.jsonl
 validation_file: ../data/scidocs/validation.jsonl

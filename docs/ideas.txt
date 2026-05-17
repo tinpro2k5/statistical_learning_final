@@ -97,11 +97,14 @@ FAISS retrieval
 Cross-encoder reranker
 
 
-allenai/scibert_scivocab_uncased
-cross-encoder/ms-marco-MiniLM-L-6-v2
 
+microsoft/deberta-v3-base
+RoBERTa-base
+RoBERTa-large Batch 8 + gradient accumulation 2
 
-Có thể đổi sang model lớn hơn như DeBERTa/RoBERTa-large cross-encoder hoặc SciBERT-like larger encoder nếu có. Ý nghĩa: kiểm tra trade-off capacity vs quality. Nhưng với 1-2 GPU T4 và dataset SciFact nhỏ, model quá lớn dễ overfit và train lâu. Cho đồ án, SciBERT base là đẹp nhất.
+Có thể đổi sang model lớn hơn như DeBERTa/RoBERTa-large cross-encoder hoặc SciBERT-like larger encoder nếu có. 
+Ý nghĩa: kiểm tra trade-off capacity vs quality. Nhưng với 1-2 GPU T4 và dataset SciFact nhỏ, model quá lớn dễ overfit và train lâu.
+
 
 https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/scidocs.zip?utm_source=chatgpt.com
 

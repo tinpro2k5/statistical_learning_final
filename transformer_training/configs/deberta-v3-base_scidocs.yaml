@@ -1,0 +1,31 @@
+task: "document_reranking"
+model_name_or_path: "microsoft/deberta-v3-base"
+num_labels: 2
+ignore_mismatched_sizes: true
+
+# ----- Data -----
+train_file:      ../data/scidocs/train.jsonl
+validation_file: ../data/scidocs/validation.jsonl
+test_file:       ../data/scidocs/test.jsonl
+
+output_dir: "outputs/reranking_scidocs_deberta"
+max_length: 512
+
+# ----- Training Hyperparameters -----
+seed: 42
+batch_size: 16
+learning_rate: 2e-5
+num_epochs: 3
+warmup_ratio: 0.1
+label_smoothing: 0.1
+
+# ----- Logging & Evaluation -----
+logging_steps: 50
+eval_steps: 200
+save_steps: 200
+
+field_map:
+  query: "query"
+  title: "title"
+  abstract: "abstract"
+  label: "label"

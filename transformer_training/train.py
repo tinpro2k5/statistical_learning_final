@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import torch
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from src.data.dataset import build_collate_fn, build_dataset
 from src.metrics.evaluator import compute_reranking_metrics, compute_rouge_metrics
