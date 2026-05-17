@@ -1,16 +1,18 @@
-# 1. Chuẩn bị dữ liệu
-python preprocess_data.py  --dataset scidocs --input_dir "../data/raw/scidocs" --output_dir "../data/scidocs" --validation_ratio 0.1 --test_ratio 0.1
 
-# Scidocs hard negatives (2 hard + 2 random)
-python preprocess_data_hard_neg.py --dataset scidocs --input_dir "../data/raw/scidocs" --output_dir "../data/scidocs_hard"
 
-# SciFact với toàn hard negatives
-python preprocess_data_hard_neg.py \
-    --dataset scifact \
-    --input_dir ../data/raw/scifact \
-    --output_dir ../data/scifact_allhard \
-    --negatives_per_positive 4 \
-    --n_hard 4
+baseline:
+# Bước 1: Sinh dữ liệu hard negative cho cả 2 bộ (nếu chưa có)
+python preprocess_data.py --dataset scifact \
+    --input_dir "../data/raw/scifact" --output_dir "../data/scifact"
+
+python preprocess_data.py --dataset scidocs \
+    --input_dir "../data/raw/scidocs" --output_dir "../data/scidocs"
+
+# Bước 2: Gộp lại
+python combine_datasets.py \
+    --input_dirs "../data/scifact" "../data/scidocs" \
+    --output_dir "../data/combined"
+
 
 
 # 2. Train (chỉ cần sửa YAML, không cần đụng code)

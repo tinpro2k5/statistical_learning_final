@@ -1,0 +1,302 @@
+{
+  "task": "document_reranking",
+  "model_name_or_path": "allenai/scibert_scivocab_uncased",
+  "best_val_ndcg_at_10": 0.8795,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.41110053377354194,
+      "validation": {
+        "ndcg_at_10": 0.8624,
+        "map": 0.8023,
+        "mrr": 0.909,
+        "hit_at_1": 0.8485,
+        "hit_at_5": 0.9798,
+        "hit_at_10": 1.0,
+        "accuracy": 0.886,
+        "precision": 0.7321,
+        "recall": 0.6777,
+        "f1": 0.7039,
+        "samples": [
+          {
+            "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+            "label": 1,
+            "score": 0.9343324899673462
+          },
+          {
+            "query_id": "2a6300ea9db239f190cb3d8cba4e45a7c0b1c710",
+            "label": 0,
+            "score": 0.17323839664459229
+          },
+          {
+            "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+            "label": 1,
+            "score": 0.9463173151016235
+          },
+          {
+            "query_id": "86f45b11497ba1c1ef1da5739ec022b4d335fa11",
+            "label": 0,
+            "score": 0.12719309329986572
+          },
+          {
+            "query_id": "a22e737d38a1bc671893a7ed341aba436571097a",
+            "label": 0,
+            "score": 0.049248743802309036
+          },
+          {
+            "query_id": "ee61c9078be00a49aedb479ee468440b9086c32d",
+            "label": 0,
+            "score": 0.1621985137462616
+          },
+          {
+            "query_id": "9767665504e617d6efbf4630046a377a1383a2bd",
+            "label": 1,
+            "score": 0.11031579971313477
+          },
+          {
+            "query_id": "863d0b86e5d2877e61f5cce971632abe2a1212cd",
+            "label": 1,
+            "score": 0.2915602922439575
+          },
+          {
+            "query_id": "4b80771429b786ea87740738378ba1eb1504a57f",
+            "label": 0,
+            "score": 0.07042059302330017
+          },
+          {
+            "query_id": "25dbf9b12475454585d5050c5cf446e1c4f6dd27",
+            "label": 0,
+            "score": 0.08618403226137161
+          }
+        ]
+      }
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.3139436782251003,
+      "validation": {
+        "ndcg_at_10": 0.8795,
+        "map": 0.8182,
+        "mrr": 0.9132,
+        "hit_at_1": 0.8586,
+        "hit_at_5": 0.9899,
+        "hit_at_10": 1.0,
+        "accuracy": 0.8942,
+        "precision": 0.7893,
+        "recall": 0.6426,
+        "f1": 0.7084,
+        "samples": [
+          {
+            "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+            "label": 1,
+            "score": 0.8124402165412903
+          },
+          {
+            "query_id": "2a6300ea9db239f190cb3d8cba4e45a7c0b1c710",
+            "label": 0,
+            "score": 0.0714121013879776
+          },
+          {
+            "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+            "label": 1,
+            "score": 0.9462997913360596
+          },
+          {
+            "query_id": "86f45b11497ba1c1ef1da5739ec022b4d335fa11",
+            "label": 0,
+            "score": 0.06051953509449959
+          },
+          {
+            "query_id": "a22e737d38a1bc671893a7ed341aba436571097a",
+            "label": 0,
+            "score": 0.051973432302474976
+          },
+          {
+            "query_id": "ee61c9078be00a49aedb479ee468440b9086c32d",
+            "label": 0,
+            "score": 0.06298892199993134
+          },
+          {
+            "query_id": "9767665504e617d6efbf4630046a377a1383a2bd",
+            "label": 1,
+            "score": 0.05524018034338951
+          },
+          {
+            "query_id": "863d0b86e5d2877e61f5cce971632abe2a1212cd",
+            "label": 1,
+            "score": 0.10070502012968063
+          },
+          {
+            "query_id": "4b80771429b786ea87740738378ba1eb1504a57f",
+            "label": 0,
+            "score": 0.06089343875646591
+          },
+          {
+            "query_id": "25dbf9b12475454585d5050c5cf446e1c4f6dd27",
+            "label": 0,
+            "score": 0.05567101016640663
+          }
+        ]
+      }
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.260976504724518,
+      "validation": {
+        "ndcg_at_10": 0.8662,
+        "map": 0.8064,
+        "mrr": 0.9285,
+        "hit_at_1": 0.8788,
+        "hit_at_5": 0.9899,
+        "hit_at_10": 0.9899,
+        "accuracy": 0.8897,
+        "precision": 0.7614,
+        "recall": 0.6529,
+        "f1": 0.703,
+        "samples": [
+          {
+            "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+            "label": 1,
+            "score": 0.9324014782905579
+          },
+          {
+            "query_id": "2a6300ea9db239f190cb3d8cba4e45a7c0b1c710",
+            "label": 0,
+            "score": 0.056385744363069534
+          },
+          {
+            "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+            "label": 1,
+            "score": 0.9466609358787537
+          },
+          {
+            "query_id": "86f45b11497ba1c1ef1da5739ec022b4d335fa11",
+            "label": 0,
+            "score": 0.04923614487051964
+          },
+          {
+            "query_id": "a22e737d38a1bc671893a7ed341aba436571097a",
+            "label": 0,
+            "score": 0.04369371756911278
+          },
+          {
+            "query_id": "ee61c9078be00a49aedb479ee468440b9086c32d",
+            "label": 0,
+            "score": 0.04788199067115784
+          },
+          {
+            "query_id": "9767665504e617d6efbf4630046a377a1383a2bd",
+            "label": 1,
+            "score": 0.039840225130319595
+          },
+          {
+            "query_id": "863d0b86e5d2877e61f5cce971632abe2a1212cd",
+            "label": 1,
+            "score": 0.11232000589370728
+          },
+          {
+            "query_id": "4b80771429b786ea87740738378ba1eb1504a57f",
+            "label": 0,
+            "score": 0.05012175068259239
+          },
+          {
+            "query_id": "25dbf9b12475454585d5050c5cf446e1c4f6dd27",
+            "label": 0,
+            "score": 0.04607842117547989
+          }
+        ]
+      }
+    }
+  ],
+  "test": {
+    "ndcg_at_10": 0.8731,
+    "map": 0.8259,
+    "mrr": 0.932,
+    "hit_at_1": 0.89,
+    "hit_at_5": 0.98,
+    "hit_at_10": 0.99,
+    "accuracy": 0.8964,
+    "precision": 0.778,
+    "recall": 0.6741,
+    "f1": 0.7223,
+    "samples": [
+      {
+        "query_id": "4a343313042b654c7d85313de3d88486a1d0e9de",
+        "label": 0,
+        "score": 0.04782751202583313
+      },
+      {
+        "query_id": "da6629447f61ef8b07ce0698b490e3fe7210c1e3",
+        "label": 1,
+        "score": 0.2111976444721222
+      },
+      {
+        "query_id": "498aad3cb4d2b8e8ff1e68a40be7dec27e8139f4",
+        "label": 0,
+        "score": 0.044335633516311646
+      },
+      {
+        "query_id": "d6b56cc6e05300426b6194dd3f6a38720678827e",
+        "label": 0,
+        "score": 0.05052114650607109
+      },
+      {
+        "query_id": "dc4ed2b22123596bb329221a18c8b92176fc7263",
+        "label": 0,
+        "score": 0.050363898277282715
+      },
+      {
+        "query_id": "012e396b02aa584cb74a65ae14af355e7c897858",
+        "label": 0,
+        "score": 0.04604855179786682
+      },
+      {
+        "query_id": "0c3ffd5f1b577e38604f361ee71feb312b5b0cab",
+        "label": 0,
+        "score": 0.04732448235154152
+      },
+      {
+        "query_id": "09109a5375d8e2ca752bedde17ba5acad1df61cb",
+        "label": 0,
+        "score": 0.05673723667860031
+      },
+      {
+        "query_id": "6affd37b83d4fca0d0e54e5d75433a74cb142671",
+        "label": 0,
+        "score": 0.05020079016685486
+      },
+      {
+        "query_id": "e642d6014a5762128a28f85dae2228826e682974",
+        "label": 1,
+        "score": 0.9439847469329834
+      }
+    ]
+  },
+  "output_dir": "outputs/reranking_scidocs",
+  "config": {
+    "task": "document_reranking",
+    "model_name_or_path": "allenai/scibert_scivocab_uncased",
+    "num_labels": 2,
+    "ignore_mismatched_sizes": true,
+    "train_file": "../data/scidocs/train.jsonl",
+    "validation_file": "../data/scidocs/validation.jsonl",
+    "test_file": "../data/scidocs/test.jsonl",
+    "output_dir": "outputs/reranking_scidocs",
+    "max_length": 512,
+    "seed": 42,
+    "batch_size": 16,
+    "learning_rate": "2e-5",
+    "num_epochs": 3,
+    "warmup_ratio": 0.1,
+    "label_smoothing": 0.1,
+    "logging_steps": 50,
+    "eval_steps": 200,
+    "save_steps": 200,
+    "field_map": {
+      "query": "query",
+      "title": "title",
+      "abstract": "abstract",
+      "label": "label"
+    }
+  }
+}

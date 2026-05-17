@@ -13,6 +13,7 @@ structured scoring.
 LLM explanation:
 “Why matched?”
 
+Mô hình được fine-tune trên tập scientific reranking tổng hợp từ SciDocs và SciFact để học cả citation-oriented relevance và claim-evidence relevance, phù hợp với ứng dụng gợi ý bài báo khoa học.
 
 
 Embedding retrieval

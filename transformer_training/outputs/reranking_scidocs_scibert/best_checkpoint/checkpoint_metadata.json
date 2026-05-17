@@ -1,0 +1,98 @@
+{
+  "task": "document_reranking",
+  "base_model": "allenai/scibert_scivocab_uncased",
+  "checkpoint_role": "best_validation",
+  "selection_metric": "ndcg_at_10",
+  "selection_score": 0.8795,
+  "epoch": 2,
+  "config": {
+    "task": "document_reranking",
+    "model_name_or_path": "allenai/scibert_scivocab_uncased",
+    "num_labels": 2,
+    "ignore_mismatched_sizes": true,
+    "train_file": "../data/scidocs/train.jsonl",
+    "validation_file": "../data/scidocs/validation.jsonl",
+    "test_file": "../data/scidocs/test.jsonl",
+    "output_dir": "outputs/reranking_scidocs",
+    "max_length": 512,
+    "seed": 42,
+    "batch_size": 16,
+    "learning_rate": "2e-5",
+    "num_epochs": 3,
+    "warmup_ratio": 0.1,
+    "label_smoothing": 0.1,
+    "logging_steps": 50,
+    "eval_steps": 200,
+    "save_steps": 200,
+    "field_map": {
+      "query": "query",
+      "title": "title",
+      "abstract": "abstract",
+      "label": "label"
+    }
+  },
+  "validation_metrics": {
+    "ndcg_at_10": 0.8795,
+    "map": 0.8182,
+    "mrr": 0.9132,
+    "hit_at_1": 0.8586,
+    "hit_at_5": 0.9899,
+    "hit_at_10": 1.0,
+    "accuracy": 0.8942,
+    "precision": 0.7893,
+    "recall": 0.6426,
+    "f1": 0.7084,
+    "samples": [
+      {
+        "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+        "label": 1,
+        "score": 0.8124402165412903
+      },
+      {
+        "query_id": "2a6300ea9db239f190cb3d8cba4e45a7c0b1c710",
+        "label": 0,
+        "score": 0.0714121013879776
+      },
+      {
+        "query_id": "80d9843338d07778dac65157a2c881892a28b821",
+        "label": 1,
+        "score": 0.9462997913360596
+      },
+      {
+        "query_id": "86f45b11497ba1c1ef1da5739ec022b4d335fa11",
+        "label": 0,
+        "score": 0.06051953509449959
+      },
+      {
+        "query_id": "a22e737d38a1bc671893a7ed341aba436571097a",
+        "label": 0,
+        "score": 0.051973432302474976
+      },
+      {
+        "query_id": "ee61c9078be00a49aedb479ee468440b9086c32d",
+        "label": 0,
+        "score": 0.06298892199993134
+      },
+      {
+        "query_id": "9767665504e617d6efbf4630046a377a1383a2bd",
+        "label": 1,
+        "score": 0.05524018034338951
+      },
+      {
+        "query_id": "863d0b86e5d2877e61f5cce971632abe2a1212cd",
+        "label": 1,
+        "score": 0.10070502012968063
+      },
+      {
+        "query_id": "4b80771429b786ea87740738378ba1eb1504a57f",
+        "label": 0,
+        "score": 0.06089343875646591
+      },
+      {
+        "query_id": "25dbf9b12475454585d5050c5cf446e1c4f6dd27",
+        "label": 0,
+        "score": 0.05567101016640663
+      }
+    ]
+  }
+}
