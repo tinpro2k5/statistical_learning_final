@@ -3,3 +3,4 @@ __pycache__
 app/backend/data
 *.jsonl
 *.safetensors
+outputs

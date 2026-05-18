@@ -1,0 +1,30 @@
+task: "document_reranking"
+model_name_or_path: "allenai/scibert_scivocab_uncased"
+num_labels: 2
+ignore_mismatched_sizes: true
+
+# ----- Data -----
+train_file:      ../data/hardx2/train.jsonl
+validation_file: ../data/hardx2/validation.jsonl
+test_file:       ../data/hardx2/test.jsonl
+
+output_dir: "outputs/scibert_hardx2"
+max_length: 512
+
+# ----- Training Hyperparameters -----
+seed: 42
+batch_size: 16
+gradient_accumulation_steps: 2
+learning_rate: 2e-5
+num_epochs: 3
+warmup_ratio: 0.1
+label_smoothing: 0.1
+
+# ----- Logging & Evaluation -----
+logging_steps: 100
+
+field_map:
+  query: "query"
+  title: "title"
+  abstract: "abstract"
+  label: "label"

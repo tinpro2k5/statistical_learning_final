@@ -102,6 +102,23 @@ def coerce_year(value: Any) -> int | None:
     return None
 
 
+def _derive_year_from_dates(paper: dict[str, Any]) -> int | None:
+    """Best-effort year extraction for arXiv-style metadata."""
+    versions = paper.get("versions", [])
+    if isinstance(versions, list) and versions:
+        first_version = versions[0]
+        if isinstance(first_version, dict):
+            year = coerce_year(first_version.get("created"))
+            if year is not None:
+                return year
+
+    for key in ("created", "update_date", "submitted_date", "date"):
+        year = coerce_year(paper.get(key))
+        if year is not None:
+            return year
+    return None
+
+
 def coerce_paper_id(paper: dict[str, Any]) -> str:
     """Derive a stable paper_id from the raw dict."""
     for key in ("paper_id", "id", "id_value", "_id"):
@@ -146,6 +163,7 @@ def normalize_paper(paper: dict[str, Any]) -> dict[str, Any]:
         "authors_text": authors_to_text(authors),
         "year": coerce_year(
             paper.get("year", paper.get("Year", paper.get("PublicationYear")))
-        ),
+        ) or _derive_year_from_dates(paper),
         "doi": normalize_text(paper.get("doi", paper.get("DOI", ""))),
     }
+

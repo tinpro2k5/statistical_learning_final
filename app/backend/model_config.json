@@ -1,8 +1,8 @@
 {
   "search_model": {
     "enabled": true,
-    "kind": "bert_nsp",
-    "model_name_or_path": "scieditor/document-reranking-scibert",
+    "kind": "cross_encoder",
+    "model_name_or_path": "..\\..\\transformer_training\\outputs\\scibert_combined\\best_checkpoint",
     "device": "auto",
     "max_length": 512,
     "batch_size": 16,

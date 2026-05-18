@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SciLit Demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f3ee;
+        --panel: #ffffff;
+        --text: #1f2430;
+        --muted: #5f687a;
+        --accent: #0f766e;
+        --accent-2: #134e4a;
+        --border: #dde3ea;
+        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 30%),
+          radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 28%),
+          linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
+        min-height: 100vh;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 20px 56px;
+      }
+      .hero {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 24px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.09);
+        color: var(--accent-2);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(32px, 4vw, 54px);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+      .subtitle {
+        max-width: 760px;
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        box-shadow: var(--shadow);
+      }
+      .form-card {
+        padding: 22px;
+        position: sticky;
+        top: 18px;
+      }
+      .form-grid {
+        display: grid;
+        gap: 14px;
+      }
+      label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--accent-2);
+      }
+      input, textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        font: inherit;
+        background: #fff;
+        color: var(--text);
+      }
+      input:focus, textarea:focus {
+        outline: 2px solid rgba(15, 118, 110, 0.18);
+        border-color: var(--accent);
+      }
+      textarea { min-height: 110px; resize: vertical; }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        border-radius: 14px;
+        padding: 13px 16px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .results-card {
+        padding: 22px;
+      }
+      .results-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .results-head h2 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .muted { color: var(--muted); }
+      .paper {
+        padding: 16px 0;
+        border-top: 1px solid var(--border);
+      }
+      .paper:first-child { border-top: 0; padding-top: 0; }
+      .paper-title {
+        margin: 0 0 6px;
+        font-size: 18px;
+        line-height: 1.35;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .score {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.09);
+        color: var(--accent-2);
+        font-weight: 700;
+      }
+      .abstract {
+        margin: 0;
+        color: #374151;
+        line-height: 1.65;
+      }
+      .empty {
+        padding: 18px;
+        border: 1px dashed var(--border);
+        border-radius: 18px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.6);
+      }
+      @media (max-width: 960px) {
+        .grid { grid-template-columns: 1fr; }
+        .form-card { position: static; }
+      }
+      @media (max-width: 640px) {
+        .wrap { padding: 22px 14px 40px; }
+        .row { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <div class="badge">Flask-only demo · FTS5 retrieval · Transformer reranker</div>
+        <h1>SciLit paper search demo</h1>
+        <p class="subtitle">
+          Use this page to search the local SQLite database and inspect reranked
+          results without React, npm, or a separate frontend build.
+        </p>
+      </section>
+
+      <section class="grid">
+        <aside class="card form-card">
+          <form method="post" action="/search" class="form-grid">
+            <div>
+              <label for="query">Query</label>
+              <textarea id="query" name="query" placeholder="e.g. neural machine translation">{{ query or "" }}</textarea>
+            </div>
+            <div>
+              <label for="keywords">Keywords</label>
+              <input id="keywords" name="keywords" type="text" value="{{ keywords or '' }}" placeholder="e.g. transformer, citation" />
+            </div>
+            <div class="row">
+              <div>
+                <label for="limit">Limit</label>
+                <input id="limit" name="limit" type="number" min="1" max="50" value="{{ limit or 10 }}" />
+              </div>
+              <div>
+                <label for="year">Year</label>
+                <input id="year" name="year" type="text" value="{{ year or '' }}" placeholder="optional" />
+              </div>
+            </div>
+            <div>
+              <label for="collection">Collection</label>
+              <input id="collection" name="collection" type="text" value="{{ collection or '' }}" placeholder="optional" />
+            </div>
+            <button class="btn" type="submit">Search</button>
+          </form>
+        </aside>
+
+        <section class="card results-card">
+          <div class="results-head">
+            <h2>Results</h2>
+            <div class="muted">{{ result_count if result_count is not none else 0 }} papers</div>
+          </div>
+
+          {% if results %}
+            {% for paper in results %}
+              <article class="paper">
+                <h3 class="paper-title">{{ paper.title }}</h3>
+                <div class="meta">
+                  <span>Paper ID: {{ paper.paper_id }}</span>
+                  {% if paper.year %}<span>Year: {{ paper.year }}</span>{% endif %}
+                  {% if paper.collection %}<span>Collection: {{ paper.collection }}</span>{% endif %}
+                  {% if paper.score is not none %}<span class="score">Score {{ '%.2f'|format(paper.score * 100) }}%</span>{% endif %}
+                </div>
+                <p class="abstract">{{ paper.abstract or 'No abstract available.' }}</p>
+              </article>
+            {% endfor %}
+          {% else %}
+            <div class="empty">
+              No search run yet. Enter a query on the left and press Search.
+            </div>
+          {% endif %}
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

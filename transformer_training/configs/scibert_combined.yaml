@@ -21,8 +21,6 @@ label_smoothing: 0.1
 
 # ----- Logging & Evaluation -----
 logging_steps: 100
-eval_steps: 500
-save_steps: 500
 
 field_map:
   query: "query"

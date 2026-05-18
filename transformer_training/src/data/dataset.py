@@ -14,7 +14,7 @@ from typing import Any
 import torch
 from torch.utils.data import Dataset
 
-from src.utils.helpers import build_citation_prompt, build_rerank_pair
+from src.utils.helpers import format_keywords
 
 
 # ---------------------------------------------------------------------------
@@ -57,12 +57,29 @@ class RerankDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict:
         row = self.rows[index]
-        query_text, candidate_text = build_rerank_pair(row)
+        keywords = format_keywords(_get(row, "keywords", self.field_map, row.get("keyword", "")))
+        query = str(_get(row, "query", self.field_map, row.get("context", ""))).strip()
+        title = str(_get(row, "title", self.field_map, "")).strip()
+        abstract = str(_get(row, "abstract", self.field_map, "")).strip()
         label = int(_get(row, "label", self.field_map, 0))
         query_id = str(
             _get(row, "query_id", self.field_map,
                  _get(row, "group_id", self.field_map, str(index)))
         )
+        query_text = " ".join(
+            part for part in (
+                f"keywords: {keywords}" if keywords else "",
+                f"query: {query}" if query else "",
+            )
+            if part
+        ).strip()
+        candidate_text = " ".join(
+            part for part in (
+                f"document title: {title}" if title else "",
+                f"document abstract: {abstract}" if abstract else "",
+            )
+            if part
+        ).strip()
         return {
             "query_text": query_text,
             "candidate_text": candidate_text,
@@ -113,7 +130,19 @@ class CitationDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict:
         row = self.rows[index]
-        source = build_citation_prompt(row)
+        keywords = format_keywords(_get(row, "keywords", self.field_map, row.get("keyword", "")))
+        context = str(_get(row, "context", self.field_map, row.get("source_context", ""))).strip()
+        title = str(_get(row, "cited_title", self.field_map, row.get("title", ""))).strip()
+        abstract = str(_get(row, "cited_abstract", self.field_map, row.get("abstract", ""))).strip()
+        source = " ".join(
+            part for part in (
+                f"keywords: {keywords}" if keywords else "",
+                f"text before citation: {context}" if context else "",
+                f"cited title: {title}" if title else "",
+                f"cited abstract: {abstract}" if abstract else "",
+            )
+            if part
+        ).strip()
         target = str(
             _get(row, "target", self.field_map,
                  row.get("citation", row.get("reference_sentence", "")))

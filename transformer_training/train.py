@@ -1,36 +1,19 @@
-"""
-train.py – Single entry point for all fine-tuning tasks.
-
-Usage examples
---------------
-# Reranking with SciBERT on SciFact
-python train.py --config configs/reranking_scifact.yaml
-
-# Citation generation with T5
-python train.py --config configs/citation_generation.yaml
-
-# Override any config key directly from the CLI
-python train.py --config configs/reranking_scifact.yaml --num_epochs 5 --batch_size 16
-
-Supported tasks (set in config YAML):
-  reranking / document_reranking  →  cross-encoder sequence classification
-  citation_generation / generation →  seq2seq (T5 / BART)
-"""
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
+from math import ceil
 from pathlib import Path
 
-# ── Make src importable when running from the transformer_training/ root ──
 sys.path.insert(0, str(Path(__file__).parent))
 
+import numpy as np
 import torch
-from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
+from transformers import Trainer, TrainingArguments
 
-from src.data.dataset import build_collate_fn, build_dataset
-from src.metrics.evaluator import compute_reranking_metrics, compute_rouge_metrics
+from src.data.dataset import RerankDataset
+from src.metrics.evaluator import compute_reranking_metrics
 from src.models.builder import build_model, build_tokenizer
 from src.utils.helpers import (
     get_logger,
@@ -39,93 +22,13 @@ from src.utils.helpers import (
     save_json,
     set_seed,
     split_by_query_id,
-    split_rows,
 )
 
-logger = get_logger("train")
-
+logger = get_logger("train_hf")
 
 # ---------------------------------------------------------------------------
-# Evaluation helpers (task-specific)
+# Task constants (kept identical to train.py for consistency)
 # ---------------------------------------------------------------------------
-
-@torch.no_grad()
-def _evaluate_reranking(model, tokenizer, rows, device, config):
-    from src.data.dataset import RerankDataset, make_rerank_collate_fn
-    model.eval()
-    if not rows:
-        return {}
-    loader = DataLoader(
-        RerankDataset(rows, field_map=config.get("field_map", {})),
-        batch_size=int(config.get("eval_batch_size", 16)),
-        shuffle=False,
-        collate_fn=make_rerank_collate_fn(tokenizer, config.get("max_length", 512)),
-    )
-    scored: list[dict] = []
-    for batch in loader:
-        labels = batch.pop("labels").tolist()
-        query_ids = batch.pop("query_id")
-        batch = {k: v.to(device) for k, v in batch.items()}
-        logits = model(**batch).logits.detach().cpu()
-        if logits.shape[-1] == 1:
-            import torch.nn.functional as F
-            probs = torch.sigmoid(logits[:, 0]).tolist()
-        else:
-            import torch.nn.functional as F
-            probs = F.softmax(logits, dim=-1)[:, 1].tolist()
-        for qid, label, score in zip(query_ids, labels, probs):
-            scored.append({"query_id": qid, "label": label, "score": score})
-    metrics = compute_reranking_metrics(scored)
-    metrics["samples"] = scored[:10]
-    return metrics
-
-
-@torch.no_grad()
-def _evaluate_generation(model, tokenizer, rows, device, config):
-    from src.data.dataset import CitationDataset, make_seq2seq_collate_fn
-    model.eval()
-    if not rows:
-        return {}
-    loader = DataLoader(
-        CitationDataset(rows, field_map=config.get("field_map", {})),
-        batch_size=int(config.get("eval_batch_size", 4)),
-        shuffle=False,
-        collate_fn=make_seq2seq_collate_fn(
-            tokenizer,
-            config.get("max_source_length", 512),
-            config.get("max_target_length", 96),
-        ),
-    )
-    all_preds, all_refs, samples = [], [], []
-    for batch in loader:
-        labels = batch.pop("labels").to(device)
-        batch = {k: v.to(device) for k, v in batch.items()}
-        gen_ids = model.generate(
-            input_ids=batch["input_ids"],
-            attention_mask=batch["attention_mask"],
-            max_length=config.get("max_target_length", 96),
-            num_beams=config.get("num_beams", 4),
-        )
-        preds = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
-        refs_ids = labels.clone()
-        refs_ids[refs_ids == -100] = tokenizer.pad_token_id
-        refs = tokenizer.batch_decode(refs_ids, skip_special_tokens=True)
-        all_preds.extend(preds)
-        all_refs.extend(refs)
-        if len(samples) < 5:
-            for p, r in zip(preds, refs):
-                samples.append({"prediction": p, "reference": r})
-    metrics = compute_rouge_metrics(all_preds, all_refs)
-    metrics["samples"] = samples
-    return metrics
-
-
-EVAL_FN_MAP = {
-    "reranking": _evaluate_reranking,
-    "document_reranking": _evaluate_reranking,
-    "citation_generation": _evaluate_generation,
-    "generation": _evaluate_generation,
-}
 
 SELECTION_METRIC = {
     "reranking": "ndcg_at_10",
@@ -134,48 +37,127 @@ SELECTION_METRIC = {
     "generation": "rougeL",
 }
 
-LOSS_FN_MAP = {
-    "reranking": "reranking",
-    "document_reranking": "reranking",
-    "citation_generation": "seq2seq",
-    "generation": "seq2seq",
-}
-
-
-def _compute_loss(logits_or_outputs, labels, task_type: str, config: dict):
-    import torch.nn.functional as F
-    if LOSS_FN_MAP.get(task_type) == "seq2seq":
-        # seq2seq: loss is directly on the outputs object
-        return logits_or_outputs.loss
-    # reranking: binary or multiclass cross-entropy
-    logits = logits_or_outputs
-    if logits.shape[-1] == 1:
-        return F.binary_cross_entropy_with_logits(logits[:, 0], labels.float())
-    
-    # Nâng cao: Hỗ trợ Label Smoothing để chống Overconfidence
-    label_smoothing = config.get("label_smoothing", 0.0)
-    return F.cross_entropy(logits, labels.long(), label_smoothing=label_smoothing)
+RERANKING_TASKS = {"reranking", "document_reranking"}
+GENERATION_TASKS = {"citation_generation", "generation"}
 
 
 # ---------------------------------------------------------------------------
-# Main training loop
+# Data collator that strips query_id before feeding to model
+# (Trainer calls model(**batch), so non-tensor keys must be removed)
+# ---------------------------------------------------------------------------
+
+class RerankCollatorForTrainer:
+    """
+    Wraps make_rerank_collate_fn but keeps query_id separate so
+    Trainer can forward only tensor fields to the model.
+    """
+
+    def __init__(self, tokenizer, max_length: int):
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __call__(self, batch: list[dict]) -> dict:
+        pairs = [(item["query_text"], item["candidate_text"]) for item in batch]
+        encodings = self.tokenizer(
+            pairs,
+            max_length=self.max_length,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+        )
+        encodings["labels"] = torch.tensor(
+            [item["label"] for item in batch], dtype=torch.long
+        )
+        # Store query_id as a plain Python list (not a tensor).
+        # Trainer will ignore non-tensor dict values in the batch.
+        encodings["query_id"] = [item["query_id"] for item in batch]
+        return encodings
+
+
+# ---------------------------------------------------------------------------
+# Custom Trainer subclass: handles query_id passthrough and custom loss
+# ---------------------------------------------------------------------------
+
+class RerankTrainer(Trainer):
+    """
+    Extends Trainer with:
+      1. Custom binary/multiclass cross-entropy loss (with optional label smoothing)
+      2. Strips query_id from batch before forwarding to model
+      3. Stores query_ids so compute_metrics can use them
+    """
+
+    def __init__(self, *args, label_smoothing: float = 0.0,
+                 query_ids: list[str] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label_smoothing = label_smoothing
+        # Populated during prediction; used to reconstruct scored rows
+        self._query_ids: list[str] = []
+
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        import torch.nn.functional as F
+
+        labels = inputs.pop("labels")
+        inputs.pop("query_id", None)   # remove before model forward
+        outputs = model(**inputs)
+        logits = outputs.logits
+
+        if logits.shape[-1] == 1:
+            loss = F.binary_cross_entropy_with_logits(logits[:, 0], labels.float())
+        else:
+            loss = F.cross_entropy(
+                logits, labels.long(),
+                label_smoothing=self.label_smoothing,
+            )
+        return (loss, outputs) if return_outputs else loss
+
+    def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+        # Capture query_ids before popping from inputs
+        query_ids = inputs.pop("query_id", [])
+        self._query_ids.extend(query_ids)
+        return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys)
+
+
+# ---------------------------------------------------------------------------
+# Evaluation helper (runs after Trainer.predict)
+# ---------------------------------------------------------------------------
+
+def _score_predictions(logits: np.ndarray, labels: np.ndarray,
+                        query_ids: list[str]) -> list[dict]:
+    """Convert raw logits to scored rows compatible with compute_reranking_metrics."""
+    if logits.shape[-1] == 1:
+        scores = 1.0 / (1.0 + np.exp(-logits[:, 0]))   # sigmoid
+    else:
+        exp = np.exp(logits - logits.max(axis=1, keepdims=True))
+        scores = exp[:, 1] / exp.sum(axis=1)            # softmax → class-1
+
+    return [
+        {"query_id": qid, "label": int(lbl), "score": float(sc)}
+        for qid, lbl, sc in zip(query_ids, labels, scores)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Main
 # ---------------------------------------------------------------------------
 
 def train(config: dict) -> None:
     task = config.get("task", "reranking")
+    if task not in RERANKING_TASKS:
+        raise NotImplementedError(
+            f"train_hf.py currently supports only reranking tasks. Got: '{task}'. "
+            "For generation tasks, keep using train.py."
+        )
+
     set_seed(config.get("seed", 42))
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() and not config.get("no_cuda", False) else "cpu"
-    )
-    logger.info(f"Task: {task} | Device: {device}")
+    logger.info(f"Task: {task}")
 
     # ── Load data ──────────────────────────────────────────────────────────
     train_path = config.get("train_file", "")
-    val_path = config.get("validation_file", "")
-    test_path = config.get("test_file", "")
+    val_path   = config.get("validation_file", "")
+    test_path  = config.get("test_file", "")
 
     if not train_path:
-        raise ValueError("train_file must be set in config or via --train_file CLI argument.")
+        raise ValueError("train_file must be set in config or via CLI.")
 
     train_rows = load_jsonl(train_path)
     logger.info(f"Loaded {len(train_rows)} training rows from {train_path}")
@@ -183,157 +165,189 @@ def train(config: dict) -> None:
     if val_path:
         val_rows = load_jsonl(val_path)
     else:
-        split_fn = split_by_query_id if task in {"reranking", "document_reranking"} else split_rows
-        train_rows, val_rows = split_fn(
+        train_rows, val_rows = split_by_query_id(
             train_rows,
             validation_ratio=config.get("validation_ratio", 0.1),
             seed=config.get("seed", 42),
         )
-        logger.info("No validation_file provided; auto-split from training data.")
+        logger.info("No validation_file; auto-split from training data.")
 
     test_rows = load_jsonl(test_path) if test_path else []
     logger.info(f"Train: {len(train_rows)} | Val: {len(val_rows)} | Test: {len(test_rows)}")
 
-    # ── Build model & tokenizer ────────────────────────────────────────────
+    # ── Model & tokenizer ──────────────────────────────────────────────────
     model_name = config.get("model_name_or_path", "")
     if not model_name:
         raise ValueError("model_name_or_path must be set in config.")
 
     logger.info(f"Loading tokenizer & model: {model_name}")
     tokenizer = build_tokenizer(task, model_name)
-    model = build_model(task, model_name, config).to(device)
+    model     = build_model(task, model_name, config)
 
-    # ── Build dataloader ───────────────────────────────────────────────────
+    # ── Datasets & collator ────────────────────────────────────────────────
     field_map = config.get("field_map", {})
-    train_dataset = build_dataset(task, train_rows, field_map)
-    collate_fn = build_collate_fn(task, tokenizer, config)
-    g = torch.Generator()
-    g.manual_seed(config.get("seed", 42))
-    
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=int(config.get("batch_size", 8)),
-        shuffle=True,
-        collate_fn=collate_fn,
-        generator=g,
-    )
-
-    # ── Optimizer & scheduler ──────────────────────────────────────────────
-    from transformers import get_linear_schedule_with_warmup
-    
-    # Nâng cao: Setup Weight Decay (L2 Regularization) chuẩn cho Transformer
-    # (Không áp dụng cho bias và LayerNorm)
-    weight_decay = float(config.get("weight_decay", 0.01))
-    no_decay = ["bias", "LayerNorm.weight"]
-    optimizer_grouped_parameters = [
-        {
-            "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-            "weight_decay": weight_decay,
-        },
-        {
-            "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
-            "weight_decay": 0.0,
-        },
-    ]
-    
-    learning_rate = float(config.get("learning_rate", 2e-5))
-    adam_epsilon = float(config.get("adam_epsilon", 1e-8))
-    optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
-    total_steps = max(len(train_loader) * int(config.get("num_epochs", 3)), 1)
-    warmup_steps = int(total_steps * float(config.get("warmup_ratio", 0.06)))
-    scheduler = get_linear_schedule_with_warmup(optimizer, warmup_steps, total_steps)
+    train_dataset = RerankDataset(train_rows, field_map=field_map)
+    val_dataset   = RerankDataset(val_rows,   field_map=field_map)
+    test_dataset  = RerankDataset(test_rows,  field_map=field_map) if test_rows else None
+    data_collator = RerankCollatorForTrainer(tokenizer, config.get("max_length", 512))
 
     # ── Output dir ─────────────────────────────────────────────────────────
     output_dir = Path(config.get("output_dir", "outputs/model"))
     output_dir.mkdir(parents=True, exist_ok=True)
     save_json(output_dir / "training_config.json", config)
 
-    # ── Training loop ──────────────────────────────────────────────────────
-    eval_fn = EVAL_FN_MAP[task]
+    # Trainer writes intermediate checkpoints here; we'll rename best later
+    hf_ckpt_dir = output_dir / "hf_checkpoints"
+
+    # ── Compute warmup_steps manually to avoid deprecation warning ──────────
+    grad_accum = int(config.get("gradient_accumulation_steps", 1))
+    num_epochs  = int(config.get("num_epochs", 3))
+    batch_size  = int(config.get("batch_size", 8))
+    # Estimate optimizer steps (Trainer uses same formula internally)
+    from math import ceil
+    optimizer_steps_per_epoch = ceil(len(train_dataset) / (batch_size * grad_accum))
+    total_optimizer_steps = optimizer_steps_per_epoch * num_epochs
+    warmup_steps = int(total_optimizer_steps * float(config.get("warmup_ratio", 0.06)))
+    logger.info(
+        f"optimizer_steps/epoch={optimizer_steps_per_epoch} | "
+        f"total={total_optimizer_steps} | warmup={warmup_steps}"
+    )
+
+    # ── TrainingArguments ──────────────────────────────────────────────────
+    training_args = TrainingArguments(
+        output_dir=str(hf_ckpt_dir),
+        num_train_epochs=num_epochs,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=int(config.get("eval_batch_size", 16)),
+        gradient_accumulation_steps=grad_accum,
+        learning_rate=float(config.get("learning_rate", 2e-5)),
+        warmup_steps=warmup_steps,
+        weight_decay=float(config.get("weight_decay", 0.01)),
+        max_grad_norm=float(config.get("max_grad_norm", 1.0)),
+        adam_epsilon=float(config.get("adam_epsilon", 1e-8)),
+        seed=int(config.get("seed", 42)),
+        label_smoothing_factor=float(config.get("label_smoothing", 0.0)),
+        # ── Checkpoint strategy ──
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_ndcg_at_10",
+        greater_is_better=True,
+        save_strategy="epoch",
+        eval_strategy="epoch",
+        save_total_limit=2,
+        # ── Logging: nhỏ để thấy loss sớm, override bằng config nếu muốn ──
+        logging_steps=int(config.get("logging_steps", 10)),
+        logging_first_step=True,
+        report_to="none",
+        remove_unused_columns=False,
+    )
+
+    # ── compute_metrics (called every eval epoch) ──────────────────────────
+    # We pass a mutable container so compute_metrics can access query_ids
+    # that were captured during prediction_step.
+
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        # query_ids were stored in trainer._query_ids during prediction_step
+        qids = trainer._query_ids[:]
+        trainer._query_ids.clear()
+
+        if len(qids) != len(labels):
+            raise RuntimeError(
+                f"query_id count ({len(qids)}) != label count ({len(labels)}). "
+                "This means prediction_step did not capture all query_ids correctly. "
+                "NDCG/MRR would be meaningless with mismatched IDs."
+            )
+
+        scored = _score_predictions(logits, labels, qids)
+        metrics = compute_reranking_metrics(scored)
+        return {k: v for k, v in metrics.items()
+                if k not in ("num_samples", "sample_predictions", "samples")}
+
+    # ── Trainer ────────────────────────────────────────────────────────────
+    trainer = RerankTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        data_collator=data_collator,
+        compute_metrics=compute_metrics,
+        label_smoothing=float(config.get("label_smoothing", 0.0)),
+    )
+
+    # ── Train ──────────────────────────────────────────────────────────────
+    logger.info("Starting training …")
+    train_result = trainer.train()
+    logger.info(f"Training result: {train_result}")
+
+
+
+    # ── Best checkpoint metadata ───────────────────────────────────────────
+    best_src = Path(trainer.state.best_model_checkpoint)
+    tokenizer.save_pretrained(str(best_src))   # ensure tokenizer is present
+
+    best_score = trainer.state.best_metric
     selection_key = SELECTION_METRIC[task]
-    best_score = -1.0
-    best_dir = output_dir / "best_checkpoint"
-    history: list[dict] = []
-    grad_accum = config.get("gradient_accumulation_steps", 1)
+    logger.info(f"Best checkpoint located at → {best_src} ({selection_key}={best_score:.4f})")
 
-    for epoch in range(1, config.get("num_epochs", 3) + 1):
-        model.train()
-        running_loss = 0.0
-        optimizer.zero_grad(set_to_none=True)
-        progress = tqdm(train_loader, desc=f"Epoch {epoch}/{config['num_epochs']}")
+    # ── Final test evaluation (on best_checkpoint, not last!) ──────────────
+    test_metrics: dict = {}
+    if test_dataset is not None:
+        logger.info("Running final test evaluation on best_checkpoint …")
+        trainer._query_ids.clear()
+        # Temporarily disable compute_metrics so it does not clear _query_ids
+        # during the predict loop – we read them ourselves right after.
+        _saved_compute_metrics = trainer.compute_metrics
+        trainer.compute_metrics = None
+        pred_output = trainer.predict(test_dataset)
+        trainer.compute_metrics = _saved_compute_metrics
 
-        for step, batch in enumerate(progress, start=1):
-            # seq2seq: all tensors go to device directly
-            if LOSS_FN_MAP.get(task) == "seq2seq":
-                batch = {k: v.to(device) for k, v in batch.items()}
-                outputs = model(**batch)
-                loss = _compute_loss(outputs, None, task, config) / grad_accum
-            else:
-                labels = batch.pop("labels").to(device)
-                batch.pop("query_id", None)
-                batch = {k: v.to(device) for k, v in batch.items()}
-                outputs = model(**batch)
-                loss = _compute_loss(outputs.logits, labels, task, config) / grad_accum
+        qids = trainer._query_ids[:]
+        trainer._query_ids.clear()
 
-            loss.backward()
-            running_loss += loss.item()
+        if len(qids) != len(pred_output.label_ids):
+            raise RuntimeError(
+                f"query_id count ({len(qids)}) != label count ({len(pred_output.label_ids)}) "
+                "during test evaluation. NDCG/MRR would be meaningless with mismatched IDs."
+            )
 
-            if step % grad_accum == 0:
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), float(config.get("max_grad_norm", 1.0))
-                )
-                optimizer.step()
-                scheduler.step()
-                optimizer.zero_grad(set_to_none=True)
+        scored = _score_predictions(
+            pred_output.predictions,
+            pred_output.label_ids,
+            qids,
+        )
+        test_metrics = compute_reranking_metrics(scored)
+        test_metrics["num_samples"] = len(scored)
+        test_metrics["sample_predictions"] = scored[:10]
+        save_json(output_dir / "test_metrics.json", test_metrics)
+        logger.info(f"Test metrics: { {k: v for k, v in test_metrics.items() if k not in ('sample_predictions',)} }")
 
-            progress.set_postfix({"loss": f"{running_loss / step:.4f}"})
+    # ── Build history from Trainer log_history ─────────────────────────────
+    history = []
+    # Group log entries by completed epoch (eval entries have whole-number epoch,
+    # loss entries have fractional epoch → round up to the epoch they belong to).
+    epoch_records: dict[int, dict] = {}
+    for entry in trainer.state.log_history:
+        ep = entry.get("epoch")
+        if ep is None:
+            continue
+        # Eval entries are emitted at exactly epoch N.0; train-loss entries are
+        # fractional (e.g. 0.97). Use ceil so fractional steps map to the epoch
+        # they are part of, matching the eval entry for that epoch.
+        ep_key = int(ep) if float(ep) == int(ep) else int(ep) + 1
+        rec = epoch_records.setdefault(ep_key, {"epoch": ep_key})
+        if "loss" in entry:
+            rec["train_loss"] = entry["loss"]
+        if "eval_ndcg_at_10" in entry:
+            rec["validation"] = {k.replace("eval_", ""): v
+                                  for k, v in entry.items()
+                                  if k.startswith("eval_")}
+    history = sorted(epoch_records.values(), key=lambda r: r["epoch"])
 
-        # ── Evaluate ──────────────────────────────────────────────────────
-        val_metrics = eval_fn(model, tokenizer, val_rows, device, config)
-        epoch_record = {
-            "epoch": epoch,
-            "train_loss": running_loss / max(len(train_loader), 1),
-            "validation": val_metrics,
-        }
-        history.append(epoch_record)
-        score = val_metrics.get(selection_key, 0.0)
-        logger.info(f"Epoch {epoch} | loss={epoch_record['train_loss']:.4f} | {selection_key}={score:.4f}")
-
-        if score >= best_score:
-            best_score = score
-            best_dir.mkdir(parents=True, exist_ok=True)
-            model.save_pretrained(best_dir)
-            tokenizer.save_pretrained(best_dir)
-            save_json(best_dir / "checkpoint_metadata.json", {
-                "task": task,
-                "base_model": model_name,
-                "checkpoint_role": "best_validation",
-                "selection_metric": selection_key,
-                "selection_score": score,
-                "epoch": epoch,
-                "config": config,
-                "validation_metrics": val_metrics,
-            })
-            logger.info(f"  → New best checkpoint saved ({selection_key}={score:.4f})")
-
-    # ── Save last checkpoint ───────────────────────────────────────────────
-    last_dir = output_dir / "last_checkpoint"
-    model.save_pretrained(last_dir)
-    tokenizer.save_pretrained(last_dir)
-    save_json(last_dir / "checkpoint_metadata.json", {
-        "task": task,
-        "base_model": model_name,
-        "checkpoint_role": "last",
-        "epochs": config.get("num_epochs", 3),
-        "config": config,
-    })
-
-    # ── Final test evaluation ──────────────────────────────────────────────
-    test_metrics = eval_fn(model, tokenizer, test_rows, device, config) if test_rows else {}
-
+    # ── training_summary.json (identical schema to train.py) ──────────────
     summary = {
         "task": task,
         "model_name_or_path": model_name,
+        "best_checkpoint_path": str(best_src),
         f"best_val_{selection_key}": best_score,
         "history": history,
         "test": test_metrics,
@@ -342,49 +356,45 @@ def train(config: dict) -> None:
     }
     save_json(output_dir / "training_summary.json", summary)
     logger.info("Training complete.")
-    logger.info(f"Best {selection_key}: {best_score:.4f}")
-    if test_metrics:
-        logger.info(f"Test metrics: {test_metrics}")
+    logger.info(f"Best val {selection_key}: {best_score:.4f}")
+
+
 
 
 # ---------------------------------------------------------------------------
-# CLI
+# CLI (identical to train.py)
 # ---------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Fine-tune any supported Transformer task. "
+        description="Fine-tune a reranking Transformer using HuggingFace Trainer. "
                     "Specify a YAML config file; CLI args override config values."
     )
     parser.add_argument("--config", dest="config_file", default="",
-                        help="Path to YAML config file (required).")
-    # Common overrides – all optional (None = use config value)
-    parser.add_argument("--task", default=None)
-    parser.add_argument("--model_name_or_path", default=None)
-    parser.add_argument("--train_file", default=None)
-    parser.add_argument("--validation_file", default=None)
-    parser.add_argument("--test_file", default=None)
-    parser.add_argument("--output_dir", default=None)
-    parser.add_argument("--num_epochs", type=int, default=None)
-    parser.add_argument("--batch_size", type=int, default=None)
+                        help="Path to YAML config file.")
+    parser.add_argument("--task",                  default=None)
+    parser.add_argument("--model_name_or_path",    default=None)
+    parser.add_argument("--train_file",            default=None)
+    parser.add_argument("--validation_file",       default=None)
+    parser.add_argument("--test_file",             default=None)
+    parser.add_argument("--output_dir",            default=None)
+    parser.add_argument("--num_epochs",  type=int,   default=None)
+    parser.add_argument("--batch_size",  type=int,   default=None)
     parser.add_argument("--eval_batch_size", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--no_cuda", action="store_true", default=None)
+    parser.add_argument("--seed",        type=int,   default=None)
     return parser
 
 
 def main() -> None:
     parser = build_parser()
-    args = parser.parse_args()
+    args   = parser.parse_args()
 
-    # Load base config from file (if provided)
     config: dict = {}
     if args.config_file:
         config = load_config(args.config_file)
         logger.info(f"Loaded config from {args.config_file}")
 
-    # Override with any explicitly-provided CLI arguments
     cli_overrides = {k: v for k, v in vars(args).items()
                      if k != "config_file" and v is not None}
     config.update(cli_overrides)

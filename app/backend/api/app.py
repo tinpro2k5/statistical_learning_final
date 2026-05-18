@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
 from db.repository import PaperRepository
@@ -54,6 +54,37 @@ def create_app(
     app.register_blueprint(make_papers_bp(repo))
     app.register_blueprint(make_search_bp(service))
     app.register_blueprint(make_title_search_bp(service))
+
+    @app.get("/")
+    def home():
+        return render_template("index.html")
+
+    @app.post("/search")
+    def search_page():
+        query = str(request.form.get("query", "")).strip()
+        keywords = str(request.form.get("keywords", "")).strip()
+        limit = int(request.form.get("limit", 10) or 10)
+        year_raw = str(request.form.get("year", "")).strip()
+        collection = str(request.form.get("collection", "")).strip() or None
+        year = int(year_raw) if year_raw else None
+
+        results = service.search(
+            query=query,
+            keywords=keywords,
+            limit=limit,
+            collection=collection,
+            year=year,
+        )
+        return render_template(
+            "index.html",
+            query=query,
+            keywords=keywords,
+            limit=limit,
+            collection=collection or "",
+            year=year_raw,
+            results=results,
+            result_count=len(results),
+        )
 
     # --- generic error handlers -------------------------------------------
     @app.errorhandler(400)
