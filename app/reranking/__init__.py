@@ -3,8 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from reranking.bert_nsp import BertNSPConfig, BertNSPReranker
-from reranking.cross_encoder import CrossEncoderConfig, CrossEncoderReranker
+from .cross_encoder import CrossEncoderConfig, CrossEncoderReranker
 
 
 def _resolve_config_path(config_path: str | Path) -> Path:
@@ -38,7 +37,7 @@ def load_reranker(config_path: str | Path):
             "Set it to true to use the reranker."
         )
 
-    kind = str(cfg.get("kind", "bert_nsp")).lower()
+    kind = str(cfg.get("kind", "cross_encoder")).lower()
     common = {
         "enabled": bool(cfg.get("enabled", False)),
         "kind": kind,
@@ -55,9 +54,6 @@ def load_reranker(config_path: str | Path):
             common["model_name_or_path"] = CrossEncoderConfig.model_name_or_path
         return CrossEncoderReranker(CrossEncoderConfig(**common))
 
-    if kind == "bert_nsp":
-        if not common["model_name_or_path"]:
-            common["model_name_or_path"] = BertNSPConfig.model_name_or_path
-        return BertNSPReranker(BertNSPConfig(**common))
-
-    raise ValueError(f"Unsupported reranker kind: {kind!r}")
+    raise ValueError(
+        f"Unsupported reranker kind: {kind!r}. Use 'cross_encoder'."
+    )

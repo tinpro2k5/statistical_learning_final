@@ -133,6 +133,24 @@ def coerce_paper_id(paper: dict[str, Any]) -> str:
     return f"{collection}:{title.lower() or 'unknown'}"
 
 
+def normalize_links(paper: dict[str, Any]) -> str:
+    """Serialize link metadata as a JSON list."""
+    links = paper.get("links")
+    if links is None:
+        url = normalize_text(paper.get("url", ""))
+        if not url:
+            doi = normalize_text(paper.get("doi", paper.get("DOI", "")))
+            paper_id = normalize_text(paper.get("paper_id", paper.get("id", "")))
+            if doi:
+                url = f"https://doi.org/{doi}"
+            elif paper_id:
+                url = f"https://arxiv.org/abs/{paper_id}"
+        links = [url] if url else []
+    elif isinstance(links, str):
+        links = [links]
+    return json.dumps(links, ensure_ascii=True)
+
+
 # ---------------------------------------------------------------------------
 # Main normalization
 # ---------------------------------------------------------------------------
@@ -155,6 +173,8 @@ def normalize_paper(paper: dict[str, Any]) -> dict[str, Any]:
         "full_text": normalize_text(
             paper.get("full_text", paper.get("content", ""))
         ),
+        "primary_category": normalize_text(paper.get("primary_category", paper.get("primaryCategory", ""))),
+        "links": normalize_links(paper),
         "venue": normalize_text(paper.get("venue", paper.get("Venue", ""))),
         "keywords": normalize_text(
             paper.get("keywords", paper.get("Keyword", ""))
@@ -166,4 +186,3 @@ def normalize_paper(paper: dict[str, Any]) -> dict[str, Any]:
         ) or _derive_year_from_dates(paper),
         "doi": normalize_text(paper.get("doi", paper.get("DOI", ""))),
     }
-

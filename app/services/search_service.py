@@ -5,7 +5,7 @@ SearchService orchestrates the two-stage search pipeline:
 
     Retriever (FTS5 / BM25 / vector)
         → top-N candidates
-    Reranker (BertNSP / CrossEncoder / …)
+    Reranker (CrossEncoder)
         → relevance scores (batch)
     Sort + top-K
         → final results

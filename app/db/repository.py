@@ -10,7 +10,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Iterable
 
-from db.normalizer import normalize_paper, parse_json_field
+from .normalizer import normalize_paper, parse_json_field
 
 
 class PaperRepository:
@@ -51,7 +51,9 @@ class PaperRepository:
                     authors_json TEXT NOT NULL DEFAULT '[]',
                     authors_text TEXT NOT NULL DEFAULT '',
                     year         INTEGER,
-                    doi          TEXT NOT NULL DEFAULT ''
+                    doi          TEXT NOT NULL DEFAULT '',
+                    primary_category TEXT NOT NULL DEFAULT '',
+                    links        TEXT NOT NULL DEFAULT '[]'
                 )
                 """
             )
@@ -64,6 +66,16 @@ class PaperRepository:
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_papers_doi ON papers(doi)"
             )
+            # Ensure backward-compatible schema changes (add columns if table existed)
+            rowcols = [r[1] for r in conn.execute("PRAGMA table_info(papers)").fetchall()]
+            if "primary_category" not in rowcols:
+                conn.execute(
+                    "ALTER TABLE papers ADD COLUMN primary_category TEXT NOT NULL DEFAULT ''"
+                )
+            if "links" not in rowcols:
+                conn.execute(
+                    "ALTER TABLE papers ADD COLUMN links TEXT NOT NULL DEFAULT '[]'"
+                )
 
     # ------------------------------------------------------------------
     # Queries
@@ -104,8 +116,8 @@ class PaperRepository:
     _UPSERT_SQL = """
         INSERT INTO papers (
             paper_id, collection, title, abstract, full_text, venue, keywords,
-            authors_json, authors_text, year, doi
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            authors_json, authors_text, year, doi, primary_category, links
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(paper_id) DO UPDATE SET
             collection   = excluded.collection,
             title        = excluded.title,
@@ -117,6 +129,8 @@ class PaperRepository:
             authors_text = excluded.authors_text,
             year         = excluded.year,
             doi          = excluded.doi
+            , primary_category = excluded.primary_category
+            , links = excluded.links
     """
 
     def _upsert_params(self, normalized: dict[str, Any]) -> tuple:
@@ -132,6 +146,8 @@ class PaperRepository:
             normalized["authors_text"],
             normalized["year"],
             normalized["doi"],
+            normalized.get("primary_category", ""),
+            normalized.get("links", "[]"),
         )
 
     def upsert_paper(self, paper: dict[str, Any]) -> dict[str, Any]:
@@ -163,6 +179,15 @@ class PaperRepository:
     # ------------------------------------------------------------------
 
     def _row_to_paper(self, row: sqlite3.Row) -> dict[str, Any]:
+        keys = set(row.keys())
+        links = parse_json_field(row["links"] if "links" in keys else "[]", [])
+        if not links:
+            doi = str(row["doi"] or "").strip()
+            paper_id = str(row["paper_id"] or "").strip()
+            if doi:
+                links = [f"https://doi.org/{doi}"]
+            elif paper_id:
+                links = [f"https://arxiv.org/abs/{paper_id}"]
         return {
             "paper_id":    row["paper_id"],
             "collection":  row["collection"],
@@ -175,4 +200,6 @@ class PaperRepository:
             "authors_text": row["authors_text"],
             "year":        row["year"],
             "doi":         row["doi"],
+            "primary_category": row["primary_category"] if "primary_category" in keys else "",
+            "links":        links,
         }

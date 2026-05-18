@@ -59,6 +59,10 @@ def create_app(
     def home():
         return render_template("index.html")
 
+    @app.get("/search")
+    def search_home():
+        return render_template("index.html")
+
     @app.post("/search")
     def search_page():
         query = str(request.form.get("query", "")).strip()

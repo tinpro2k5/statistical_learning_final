@@ -10,6 +10,20 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 
 from db.repository import PaperRepository
+import requests
+import re
+
+
+def _extract_title_and_description(html: str) -> dict:
+    title = None
+    desc = None
+    m = re.search(r"<title>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
+    if m:
+        title = m.group(1).strip()
+    m2 = re.search(r"<meta\s+name=[\"']description[\"']\s+content=[\"'](.*?)[\"']", html, re.IGNORECASE | re.DOTALL)
+    if m2:
+        desc = m2.group(1).strip()
+    return {"title": title or "", "description": desc or ""}
 
 
 def make_papers_bp(repo: PaperRepository) -> Blueprint:
@@ -41,5 +55,22 @@ def make_papers_bp(repo: PaperRepository) -> Blueprint:
             papers = projected
 
         return jsonify({"response": papers})
+
+    @bp.post("/ml-api/fetch-url/v1.0")
+    def fetch_url():
+        payload = request.get_json(silent=True) or {}
+        url = payload.get("url")
+        if not url:
+            return jsonify({"error": "no url provided"}), 400
+        try:
+            headers = {"User-Agent": "litsearch-fetcher/1.0"}
+            resp = requests.get(url, timeout=10, headers=headers)
+            resp.raise_for_status()
+            text = resp.text
+            info = _extract_title_and_description(text)
+            snippet = text[:4000]
+            return jsonify({"status": "ok", "url": url, "final_url": resp.url, "info": info, "snippet": snippet})
+        except requests.RequestException as e:
+            return jsonify({"status": "error", "error": str(e)}), 502
 
     return bp

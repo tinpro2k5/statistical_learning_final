@@ -227,6 +227,7 @@ def train(config: dict) -> None:
         adam_epsilon=float(config.get("adam_epsilon", 1e-8)),
         seed=int(config.get("seed", 42)),
         label_smoothing_factor=float(config.get("label_smoothing", 0.0)),
+        fp16=bool(config.get("fp16", False)),
         # ── Checkpoint strategy ──
         load_best_model_at_end=True,
         metric_for_best_model="eval_ndcg_at_10",

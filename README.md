@@ -8,13 +8,12 @@ A focused standalone project extracted from SciLit for two Transformer-based NLP
 This folder is intentionally smaller than the original repository. It contains:
 
 - Training and evaluation scripts for both core models.
-- A lightweight React wrapper UI.
 - Dependency files for Python and frontend packages.
 
 ## What is included
 
 - `transformer_training/` for fine-tuning and evaluation.
-- `frontend/SciLit-React/` for a small demo interface.
+- `app/api/templates/index.html` for the Flask demo interface.
 
 ## What is not included
 
@@ -55,9 +54,8 @@ generic reranker, use:
 python transformer_training/document_reranking_train.py --config_file transformer_training/configs/document_reranking_minilm.yaml
 ```
 
-After training, copy `backend/model_config.cross_encoder.example.json` to
-`backend/model_config.json` and set `model_name_or_path` to the checkpoint you
-want the web app to serve.
+`app/model_config.json` is the runtime config used by the Flask app.
+
 
 Citation generation:
 
@@ -76,9 +74,9 @@ Each training run saves:
 ## Simplified database layer
 
 ```bash
-cd backend
-python -m scripts.download_and_build --db_path data/papers.sqlite3 --allow_sample_when_no_sources
-python -m flask --app api.app run --port 8060
+cd statistical_learning_final
+python app/scripts/build_db.py --input_file data/raw/arxiv_sample.jsonl --db_path data/papers.sqlite3 --processed_dir data/processed
+python -m flask --app statistical_learning_final.app.api.app run --port 8060
 ```
 
 The offline pipeline is split into three explicit stages:
@@ -87,14 +85,14 @@ The offline pipeline is split into three explicit stages:
 2. Process and normalize records into a stable schema.
 3. Build the SQLite database once, then keep the runtime API read-only.
 
-To make the backend load a Transformer reranker, switch `backend/model_config.json` to something like:
+To make the backend load a Transformer reranker, switch `app/model_config.json` to something like:
 
 ```json
 {
 	"search_model": {
 		"enabled": true,
-		"kind": "bert_nsp",
-		"model_name_or_path": "scieditor/document-reranking-scibert"
+		"kind": "cross_encoder",
+		"model_name_or_path": "outputs/document_reranking/best_checkpoint"
 	}
 }
 ```
@@ -105,8 +103,3 @@ To make the backend load a Transformer reranker, switch `backend/model_config.js
 
 Install the Python packages from `backend/requirements.txt` and the task-specific extras in `transformer_training/requirements.txt`.
 
-## Frontend setup
-
-Run the React app from `frontend/SciLit-React/` after installing the npm dependencies in `package.json`.
-
-Set `REACT_APP_NLP_SERVER_ADDRESS` to the API gateway URL if you connect it to the original SciLit backend.

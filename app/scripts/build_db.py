@@ -7,13 +7,23 @@ build the SQLite database from a local file.
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict, deque
 import json
 from pathlib import Path
+import sys
 from typing import Any, Iterable
 
-from db.normalizer import normalize_paper
-from db.repository import PaperRepository
-from ingestion.loader import iter_papers_from_file
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+try:
+    from app.db.normalizer import normalize_paper
+    from app.db.repository import PaperRepository
+    from app.ingestion.loader import iter_papers_from_file
+except ModuleNotFoundError:
+    from statistical_learning_final.app.db.normalizer import normalize_paper
+    from statistical_learning_final.app.db.repository import PaperRepository
+    from statistical_learning_final.app.ingestion.loader import iter_papers_from_file
 
 BATCH_SIZE = 1000
 
@@ -25,6 +35,37 @@ BATCH_SIZE = 1000
 def _stream_from_file(path: str | Path) -> Iterable[dict[str, Any]]:
     """Stream records from a local file (JSON or JSONL)."""
     return iter_papers_from_file(path)
+
+
+def _balanced_sample_by_year(
+    rows: Iterable[dict[str, Any]],
+    max_papers: int,
+) -> tuple[list[dict[str, Any]], int]:
+    """Return up to max_papers normalized rows, spread as evenly as possible by year."""
+    buckets: dict[int | None, deque[dict[str, Any]]] = defaultdict(deque)
+    raw_count = 0
+
+    for raw_record in rows:
+        raw_count += 1
+        normalized = normalize_paper(raw_record)
+        buckets[normalized.get("year")].append(normalized)
+
+    if max_papers <= 0:
+        return [row for year in sorted(buckets, key=lambda y: (y is None, y or 0)) for row in buckets[year]], raw_count
+
+    selected: list[dict[str, Any]] = []
+    years = sorted(buckets, key=lambda y: (y is None, y or 0))
+    while years and len(selected) < max_papers:
+        next_years = []
+        for year in years:
+            bucket = buckets[year]
+            if bucket and len(selected) < max_papers:
+                selected.append(bucket.popleft())
+            if bucket:
+                next_years.append(year)
+        years = next_years
+
+    return selected, raw_count
 
 
 # ---------------------------------------------------------------------------
@@ -68,12 +109,14 @@ def main() -> None:
 
     with processed_file.open("w", encoding="utf-8") as fh:
         print(f"Streaming from: {args.input_file}")
-        for raw_record in _stream_from_file(args.input_file):
-            raw_count += 1
-            if args.max_papers > 0 and raw_count > args.max_papers:
-                raw_count = args.max_papers
-                break
-            normalized = normalize_paper(raw_record)
+        rows, raw_count = _balanced_sample_by_year(
+            _stream_from_file(args.input_file),
+            args.max_papers,
+        )
+        if args.max_papers > 0:
+            print(f"Balanced sample: {len(rows):,} papers across publication years")
+
+        for normalized in rows:
             fh.write(json.dumps(normalized, ensure_ascii=True) + "\n")
             batch.append(normalized)
             if len(batch) >= BATCH_SIZE:
@@ -84,14 +127,15 @@ def main() -> None:
             inserted += repo.bulk_upsert_normalized(batch)
             batch.clear()
 
+    line = "-" * 50
     print(
-        f"\n{'─'*50}\n"
+        f"\n{line}\n"
         f"  Raw records   : {raw_count:,}\n"
         f"  Inserted      : {inserted:,}\n"
         f"  Total in DB   : {repo.count():,}\n"
         f"  DB path       : {Path(args.db_path).resolve()}\n"
         f"  Processed file: {processed_file.resolve()}\n"
-        f"{'─'*50}"
+        f"{line}"
     )
 
 

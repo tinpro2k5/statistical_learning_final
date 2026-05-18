@@ -3,7 +3,7 @@ reranking/base.py
 -----------------
 Reranker Protocol — the contract every reranking backend must satisfy.
 
-Current implementation: BertNSPReranker (bert_nsp.py).
+Current implementation: CrossEncoderReranker (cross_encoder.py).
 Future: CrossEncoder, ColBERT, etc.
 """
 from __future__ import annotations

@@ -27,5 +27,6 @@ python evaluate.py --task document_reranking \
     --data_file ../data/reranking/test.jsonl
 
 
-cd app\backend
-python -m scripts.build_db --input_file data\raw\arxiv_snapshot.json --db_path data\papers.sqlite3 --processed_dir data\processed --max_papers 50000
+cd statistical_learning_final
+python app/scripts/build_db.py --input_file data/raw/arxiv_sample.jsonl --db_path data/papers.sqlite3 --processed_dir data/processed --max_papers 50000
+python -m flask --app statistical_learning_final.app.api.app run --port 8060

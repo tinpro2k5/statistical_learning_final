@@ -214,6 +214,14 @@ class FTS5Retriever:
 
     @staticmethod
     def _row_to_paper(row: sqlite3.Row) -> dict[str, Any]:
+        links = parse_json_field(row["links"] if "links" in row.keys() else "[]", [])
+        if not links:
+            doi = str(row["doi"] or "").strip()
+            paper_id = str(row["paper_id"] or "").strip()
+            if doi:
+                links = [f"https://doi.org/{doi}"]
+            elif paper_id:
+                links = [f"https://arxiv.org/abs/{paper_id}"]
         return {
             "paper_id":    row["paper_id"],
             "collection":  row["collection"],
@@ -226,4 +234,6 @@ class FTS5Retriever:
             "authors_text": row["authors_text"],
             "year":        row["year"],
             "doi":         row["doi"],
+            "primary_category": row["primary_category"] if "primary_category" in row.keys() else "",
+            "links":       links,
         }

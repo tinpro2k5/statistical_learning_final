@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SciLit Demo</title>
+    <title>Scientific Literature Search Demo</title>
     <style>
       :root {
         color-scheme: light;
@@ -170,6 +170,44 @@
         color: #374151;
         line-height: 1.65;
       }
+      .abstract a {
+        color: var(--accent-2);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .abstract pre {
+        overflow-x: auto;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #f7f8fa;
+        border: 1px solid var(--border);
+      }
+      .abstract code {
+        font-family: Consolas, Monaco, 'Courier New', monospace;
+        font-size: 0.95em;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 10px 0 0;
+      }
+      .link-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fafbfc;
+        color: var(--accent-2);
+        text-decoration: none;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .empty {
         padding: 18px;
         border: 1px dashed var(--border);
@@ -190,11 +228,11 @@
   <body>
     <main class="wrap">
       <section class="hero">
-        <div class="badge">Flask-only demo · FTS5 retrieval · Transformer reranker</div>
-        <h1>SciLit paper search demo</h1>
+        <div class="badge">Flask demo · FTS5 retrieval · Transformer reranker</div>
+        <h1>Scientific literature search demo</h1>
         <p class="subtitle">
-          Use this page to search the local SQLite database and inspect reranked
-          results without React, npm, or a separate frontend build.
+          Search the local SQLite database, inspect reranked results, and preview
+          article metadata directly in the browser.
         </p>
       </section>
 
@@ -241,9 +279,19 @@
                   <span>Paper ID: {{ paper.paper_id }}</span>
                   {% if paper.year %}<span>Year: {{ paper.year }}</span>{% endif %}
                   {% if paper.collection %}<span>Collection: {{ paper.collection }}</span>{% endif %}
+                  {% if paper.links %}<span>{{ paper.links|length }} link{{ '' if paper.links|length == 1 else 's' }}</span>{% endif %}
                   {% if paper.score is not none %}<span class="score">Score {{ '%.2f'|format(paper.score * 100) }}%</span>{% endif %}
                 </div>
-                <p class="abstract">{{ paper.abstract or 'No abstract available.' }}</p>
+                <div class="abstract markdown" data-markdown='{{ (paper.abstract or "No abstract available.") | tojson }}'></div>
+                {% if paper.links %}
+                  <div class="links">
+                    {% for link in paper.links %}
+                      {% if link %}
+                        <a class="link-chip" href="{{ link }}" target="_blank" rel="noreferrer noopener">{{ link }}</a>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
               </article>
             {% endfor %}
           {% else %}
@@ -254,5 +302,85 @@
         </section>
       </section>
     </main>
+    <script>
+      function escapeHtml(value) {
+        return value
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function inlineMarkdown(text) {
+        return text
+          .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/(^|\W)\*([^*]+)\*(?=\W|$)/g, '$1<em>$2</em>');
+      }
+
+      function renderMarkdown(raw) {
+        const text = String(raw || '');
+        const escaped = escapeHtml(text);
+        const lines = escaped.split(/\r?\n/);
+        const blocks = [];
+        let listItems = [];
+
+        function flushList() {
+          if (listItems.length) {
+            blocks.push('<ul>' + listItems.map((item) => '<li>' + inlineMarkdown(item) + '</li>').join('') + '</ul>');
+            listItems = [];
+          }
+        }
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            flushList();
+            continue;
+          }
+          if (/^[-*+]\s+/.test(trimmed)) {
+            listItems.push(trimmed.replace(/^[-*+]\s+/, ''));
+            continue;
+          }
+          flushList();
+          blocks.push('<p>' + inlineMarkdown(trimmed) + '</p>');
+        }
+
+        flushList();
+        return blocks.join('');
+      }
+
+      document.querySelectorAll('[data-markdown]').forEach((node) => {
+        try {
+          node.innerHTML = renderMarkdown(JSON.parse(node.dataset.markdown || '""'));
+        } catch (error) {
+          node.textContent = node.dataset.markdown || '';
+        }
+      });
+
+      window.addEventListener('load', () => {
+        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+          window.MathJax.typesetPromise();
+        }
+      });
+    </script>
+    <script>
+      window.MathJax = {
+        startup: {
+          typeset: true,
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true,
+        },
+        options: {
+          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+        },
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   </body>
 </html>

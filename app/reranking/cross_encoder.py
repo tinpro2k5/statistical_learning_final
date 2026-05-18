@@ -59,18 +59,34 @@ class CrossEncoderReranker:
     def _clean(value: Any) -> str:
         if value is None:
             return ""
+        if isinstance(value, list):
+            return "; ".join(str(k).strip() for k in value if str(k).strip())
         return " ".join(str(value).strip().split())
 
+    @staticmethod
+    def _render_template(template: str, values: dict[str, str]) -> str:
+        class _SafeDict(dict):
+            def __missing__(self, key: str) -> str:
+                return ""
+
+        rendered = template.format_map(_SafeDict(values))
+        return " ".join(rendered.strip().split())
+
     def build_query_text(self, query: str, keywords: str) -> str:
-        return self.config.query_template.format(
-            query=self._clean(query),
-            keywords=self._clean(keywords),
+        query_cl = self._clean(query)
+        kw_cl = self._clean(keywords)
+        return self._render_template(
+            self.config.query_template,
+            {"keywords": kw_cl, "query": query_cl},
         )
 
     def build_candidate_text(self, paper: dict[str, Any]) -> str:
         title = self._clean(paper.get("title", paper.get("Title", "")))
         abstract = self._clean(paper.get("abstract", paper.get("Abstract", "")))
-        return self.config.candidate_template.format(title=title, abstract=abstract)
+        return self._render_template(
+            self.config.candidate_template,
+            {"title": title, "abstract": abstract},
+        )
 
     def _scores_from_logits(self, logits):
         torch = self._torch

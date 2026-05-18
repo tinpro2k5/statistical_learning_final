@@ -1,0 +1,128 @@
+[
+  {
+    "paper_id": "sample-1",
+    "collection": "sample",
+    "title": "Semantic Search with Transformer-based Scientific Retrieval",
+    "abstract": "This paper studies semantic search using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery.",
+    "full_text": "This paper studies semantic search using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery. The database stores papers in SQLite for fast search and lookup.",
+    "venue": "SciLit Demo Workshop",
+    "keywords": "semantic search; transformer; retrieval; citation",
+    "authors": [
+      {
+        "GivenName": "An",
+        "FamilyName": "Nguyen"
+      },
+      {
+        "GivenName": "Minh",
+        "FamilyName": "Tran"
+      }
+    ],
+    "year": 2024,
+    "doi": "10.0000/0001"
+  },
+  {
+    "paper_id": "sample-2",
+    "collection": "sample",
+    "title": "Document Reranking with Transformer-based Scientific Retrieval",
+    "abstract": "This paper studies document reranking using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery.",
+    "full_text": "This paper studies document reranking using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery. The database stores papers in SQLite for fast search and lookup.",
+    "venue": "SciLit Demo Workshop",
+    "keywords": "document reranking; transformer; retrieval; citation",
+    "authors": [
+      {
+        "GivenName": "An",
+        "FamilyName": "Nguyen"
+      },
+      {
+        "GivenName": "Minh",
+        "FamilyName": "Tran"
+      }
+    ],
+    "year": 2025,
+    "doi": "10.0000/0002"
+  },
+  {
+    "paper_id": "sample-3",
+    "collection": "sample",
+    "title": "Citation Generation with Transformer-based Scientific Retrieval",
+    "abstract": "This paper studies citation generation using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery.",
+    "full_text": "This paper studies citation generation using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery. The database stores papers in SQLite for fast search and lookup.",
+    "venue": "SciLit Demo Workshop",
+    "keywords": "citation generation; transformer; retrieval; citation",
+    "authors": [
+      {
+        "GivenName": "An",
+        "FamilyName": "Nguyen"
+      },
+      {
+        "GivenName": "Minh",
+        "FamilyName": "Tran"
+      }
+    ],
+    "year": 2024,
+    "doi": "10.0000/0003"
+  },
+  {
+    "paper_id": "sample-4",
+    "collection": "sample",
+    "title": "Question Answering with Transformer-based Scientific Retrieval",
+    "abstract": "This paper studies question answering using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery.",
+    "full_text": "This paper studies question answering using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery. The database stores papers in SQLite for fast search and lookup.",
+    "venue": "SciLit Demo Workshop",
+    "keywords": "question answering; transformer; retrieval; citation",
+    "authors": [
+      {
+        "GivenName": "An",
+        "FamilyName": "Nguyen"
+      },
+      {
+        "GivenName": "Minh",
+        "FamilyName": "Tran"
+      }
+    ],
+    "year": 2025,
+    "doi": "10.0000/0004"
+  },
+  {
+    "paper_id": "sample-5",
+    "collection": "sample",
+    "title": "Text Summarization with Transformer-based Scientific Retrieval",
+    "abstract": "This paper studies text summarization using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery.",
+    "full_text": "This paper studies text summarization using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery. The database stores papers in SQLite for fast search and lookup.",
+    "venue": "SciLit Demo Workshop",
+    "keywords": "text summarization; transformer; retrieval; citation",
+    "authors": [
+      {
+        "GivenName": "An",
+        "FamilyName": "Nguyen"
+      },
+      {
+        "GivenName": "Minh",
+        "FamilyName": "Tran"
+      }
+    ],
+    "year": 2024,
+    "doi": "10.0000/0005"
+  },
+  {
+    "paper_id": "sample-6",
+    "collection": "sample",
+    "title": "Named Entity Recognition with Transformer-based Scientific Retrieval",
+    "abstract": "This paper studies named entity recognition using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery.",
+    "full_text": "This paper studies named entity recognition using a transformer encoder and a lightweight retrieval database. We compare title matching, abstract matching, and semantic ranking for paper discovery. The database stores papers in SQLite for fast search and lookup.",
+    "venue": "SciLit Demo Workshop",
+    "keywords": "named entity recognition; transformer; retrieval; citation",
+    "authors": [
+      {
+        "GivenName": "An",
+        "FamilyName": "Nguyen"
+      },
+      {
+        "GivenName": "Minh",
+        "FamilyName": "Tran"
+      }
+    ],
+    "year": 2025,
+    "doi": "10.0000/0006"
+  }
+]
