@@ -4,11 +4,11 @@ num_labels: 2
 ignore_mismatched_sizes: true
 
 # ----- Data -----
-train_file:      ../data/hardx2/train.jsonl
-validation_file: ../data/hardx2/validation.jsonl
-test_file:       ../data/hardx2/test.jsonl
+train_file:      ../data/combined_hardx2/train.jsonl
+validation_file: ../data/combined_hardx2/validation.jsonl
+test_file:       ../data/combined_hardx2/test.jsonl
 
-output_dir: "outputs/roberta_hardx2"
+output_dir: "outputs/roberta-base_hardx2"
 max_length: 512
 
 # ----- Training Hyperparameters -----

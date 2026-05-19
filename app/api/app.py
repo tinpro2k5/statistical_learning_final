@@ -24,7 +24,6 @@ from services.search_service import SearchService
 from api.routes.health import make_health_bp
 from api.routes.papers import make_papers_bp
 from api.routes.search import make_search_bp
-from api.routes.title_search import make_title_search_bp
 
 
 def create_app(
@@ -53,7 +52,6 @@ def create_app(
     app.register_blueprint(make_health_bp(repo))
     app.register_blueprint(make_papers_bp(repo))
     app.register_blueprint(make_search_bp(service))
-    app.register_blueprint(make_title_search_bp(service))
 
     @app.get("/")
     def home():

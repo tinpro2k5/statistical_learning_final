@@ -294,6 +294,10 @@
                 {% endif %}
               </article>
             {% endfor %}
+          {% elif request.method == 'POST' or query or keywords %}
+            <div class="empty">
+              No results found for your query. Try adjusting the keywords or filters.
+            </div>
           {% else %}
             <div class="empty">
               No search run yet. Enter a query on the left and press Search.

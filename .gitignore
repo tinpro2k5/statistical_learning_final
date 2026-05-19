@@ -4,3 +4,7 @@ app/backend/data
 *.jsonl
 *.safetensors
 outputs
+ideas.*
+desktop.ini
+*.sqlite3-shm
+*.sqlite3-wal

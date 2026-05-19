@@ -174,7 +174,7 @@ class FTS5Retriever:
         sql = f"""
             SELECT p.*
             FROM papers_fts
-            JOIN papers p ON papers_fts.paper_id = p.paper_id
+            JOIN papers p ON papers_fts.rowid = p.rowid
             WHERE {' AND '.join(where_clauses)}
             ORDER BY rank
             LIMIT ?

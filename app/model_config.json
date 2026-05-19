@@ -2,10 +2,10 @@
   "search_model": {
     "enabled": true,
     "kind": "cross_encoder",
-    "model_name_or_path": "..\\transformer_training\\outputs/scibert_hardx2\\hf_checkpoints/checkpoint-1358",
+    "model_name_or_path": "../transformer_training/outputs/scibert_combined/hf_checkpoints/checkpoint-754",
     "device": "auto",
     "max_length": 512,
-    "batch_size": 16,
+    "batch_size": 32,
     "query_template": "keywords: {keywords} text before citation: {query}",
     "candidate_template": "title: {title} abstract: {abstract}"
   }

@@ -23,7 +23,8 @@ from reranking.base import Reranker
 
 # How many FTS candidates to fetch before reranking.
 # Enough headroom so reranker can discriminate; small enough to stay fast.
-_RETRIEVAL_POOL = 100
+_RETRIEVAL_POOL = 136
+_MIN_RETRIEVAL_POOL = 20
 
 
 class SearchService:
@@ -54,6 +55,26 @@ class SearchService:
     # Public API
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _query_token_count(query: str) -> int:
+        return len([token for token in query.split() if token])
+
+    def _candidate_pool_size(self, query: str, limit: int) -> int:
+        requested_limit = max(int(limit), 1)
+        token_count = self._query_token_count(query)
+
+        if token_count <= 2:
+            multiplier = 9
+        elif token_count <= 5:
+            multiplier = 7
+        elif token_count <= 10:
+            multiplier = 5
+        else:
+            multiplier = 3
+
+        pool_size = requested_limit * multiplier
+        return max(_MIN_RETRIEVAL_POOL, min(_RETRIEVAL_POOL, pool_size))
+
     def search(
         self,
         query: str = "",
@@ -69,12 +90,13 @@ class SearchService:
         """
         query = normalize_text(query)
         keywords = normalize_text(keywords)
+        retrieval_limit = self._candidate_pool_size(query, limit)
 
         # Stage 1 — retrieve candidate pool
         candidates = self.retriever.search(
             query=query,
             keywords=keywords,
-            limit=_RETRIEVAL_POOL,
+            limit=retrieval_limit,
             filters={"collection": collection, "year": year},
         )
 
@@ -98,46 +120,6 @@ class SearchService:
             for score, paper in ranked[:limit]
         ]
 
-    def search_by_title(
-        self,
-        title: str,
-        authors: Any | None = None,
-        limit: int = 10,
-    ) -> list[dict[str, Any]]:
-        """
-        Title-oriented search with optional author boosting.
-
-        Uses the same two-stage pipeline; exact-title and author matches
-        receive a post-hoc score boost to surface precise hits at the top.
-        """
-        title = normalize_text(title)
-        author_text = normalize_text(authors_to_text(authors))
-        combined_keywords = author_text
-
-        results = self.search(
-            query=title,
-            keywords=combined_keywords,
-            limit=max(limit * 3, limit),
-        )
-
-        # Post-hoc boosting for exact matches (on top of reranker score)
-        boosted: list[dict[str, Any]] = []
-        for paper in results:
-            score = float(paper.get("score", 0.0))
-            paper_title = normalize_text(paper.get("title", "")).lower()
-            paper_authors = normalize_text(paper.get("authors_text", "")).lower()
-
-            if title and title.lower() == paper_title:
-                score += 8.0
-            if author_text and author_text.lower() in paper_authors:
-                score += 6.0
-
-            boosted.append({**paper, "score": round(score, 6)})
-
-        boosted.sort(
-            key=lambda p: (-p["score"], p.get("title", ""))
-        )
-        return boosted[:limit]
 
     def score_papers(
         self,

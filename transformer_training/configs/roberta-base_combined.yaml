@@ -8,7 +8,7 @@ train_file:      ../data/combined/train.jsonl
 validation_file: ../data/combined/validation.jsonl
 test_file:       ../data/combined/test.jsonl
 
-output_dir: "outputs/roberta_combined"
+output_dir: "outputs/roberta-base_combined"
 max_length: 512
 
 # ----- Training Hyperparameters -----

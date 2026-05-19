@@ -16,6 +16,8 @@ from .normalizer import normalize_paper, parse_json_field
 class PaperRepository:
     """Handles CRUD operations on the *papers* table."""
 
+    _IN_CLAUSE_LIMIT = 900
+
     def __init__(self, db_path: str | Path) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,11 +103,48 @@ class PaperRepository:
     def get_papers(
         self, paper_refs: Iterable[dict[str, Any]]
     ) -> list[dict[str, Any]]:
-        results = []
+        refs: list[tuple[str, str | None]] = []
+        ids_by_collection: dict[str | None, list[str]] = {}
+        seen_refs: set[tuple[str, str | None]] = set()
+
         for ref in paper_refs:
-            paper_id = ref.get("id_value", ref.get("paper_id", ref.get("id", "")))
-            collection = ref.get("collection")
-            paper = self.get_paper(str(paper_id), collection)
+            paper_id = str(ref.get("id_value", ref.get("paper_id", ref.get("id", "")))).strip()
+            collection = ref.get("collection") or None
+            refs.append((paper_id, collection))
+            ref_key = (paper_id, collection)
+            if paper_id and ref_key not in seen_refs:
+                seen_refs.add(ref_key)
+                ids_by_collection.setdefault(collection, []).append(paper_id)
+
+        if not refs:
+            return []
+
+        rows_by_key: dict[tuple[str, str | None], dict[str, Any]] = {}
+        rows_by_id: dict[str, dict[str, Any]] = {}
+
+        with self.connect() as conn:
+            for collection, paper_ids in ids_by_collection.items():
+                if not paper_ids:
+                    continue
+                for chunk_start in range(0, len(paper_ids), self._IN_CLAUSE_LIMIT):
+                    chunk = paper_ids[chunk_start : chunk_start + self._IN_CLAUSE_LIMIT]
+                    placeholders = ", ".join("?" for _ in chunk)
+                    sql = f"SELECT * FROM papers WHERE paper_id IN ({placeholders})"
+                    params: list[Any] = list(chunk)
+                    if collection is not None:
+                        sql += " AND collection = ?"
+                        params.append(collection)
+                    for row in conn.execute(sql, params).fetchall():
+                        paper = self._row_to_paper(row)
+                        row_key = (str(row["paper_id"]), row["collection"])
+                        rows_by_key[row_key] = paper
+                        rows_by_id[str(row["paper_id"])] = paper
+
+        results: list[dict[str, Any]] = []
+        for paper_id, collection in refs:
+            paper = rows_by_key.get((paper_id, collection))
+            if paper is None and collection is None:
+                paper = rows_by_id.get(paper_id)
             results.append(paper or {})
         return results
 
