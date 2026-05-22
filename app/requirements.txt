@@ -1,13 +1,5 @@
-tqdm
-nltk
-numpy
 requests
 flask
 flask_cors
-transformers
-gputil
-more-itertools
-rouge-score
-sentencepiece
 torch
-pyyaml
+transformers

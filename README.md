@@ -74,8 +74,20 @@ statistical_learning_final/
 
 ### 1.1 Install dependencies
 
+For a reproducible Conda setup and CUDA enabled, use the `environment.yml`:
+
 ```bash
 cd transformer_training
+conda env create -f environment.yml
+conda activate transformer_training
+```
+
+If you prefer pip inside an existing environment, install the CUDA-enabled PyTorch wheel first, then the remaining packages:
+
+```bash
+cd transformer_training
+
+pip install torch --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 ```
 
