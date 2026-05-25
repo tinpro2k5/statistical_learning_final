@@ -397,9 +397,9 @@ Edit `app/model_config.json` to point to your trained checkpoint:
     "model_name_or_path": "../transformer_training/outputs/roberta-base_hardx2/hf_checkpoints/checkpoint-2716",
     "device": "auto",
     "max_length": 512,
-    "batch_size": 16,
-    "query_template": "keywords: {keywords} text before citation: {query}",
-    "candidate_template": "title: {title} abstract: {abstract}"
+    "batch_size": 64,
+    "query_template": "query: {query}",
+    "candidate_template": "document title: {title} document abstract: {abstract}"
   }
 }
 ```
