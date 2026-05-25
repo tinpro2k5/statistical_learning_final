@@ -11,19 +11,32 @@ Usage:
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
 from db.repository import PaperRepository
+from db.normalizer import normalize_text
 from reranking import load_reranker
 from retrieval.fts5 import FTS5Retriever
 from services.search_service import SearchService
+from services.paper_summary_service import PaperSummaryService
+from services.summarizers import build_summary_model
 
 from api.routes.health import make_health_bp
 from api.routes.papers import make_papers_bp
 from api.routes.search import make_search_bp
+
+
+def _load_json_config(config_path: str | Path) -> dict:
+    try:
+        with Path(config_path).open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 
 def create_app(
@@ -44,13 +57,18 @@ def create_app(
     repo      = PaperRepository(db_path)
     retriever = FTS5Retriever(db_path)          # ← swap point
     reranker  = load_reranker(config_path)
+    config = _load_json_config(config_path)
+    summary_settings = config.get("summary_model", {})
+    summary_model = build_summary_model(summary_settings, normalize_fn=normalize_text)
+
+    summary_service = PaperSummaryService(repo, summary_settings, summary_model)
 
     # --- service layer ----------------------------------------------------
     service = SearchService(repo, retriever, reranker)
 
     # --- routes (factory-function pattern) --------------------------------
     app.register_blueprint(make_health_bp(repo))
-    app.register_blueprint(make_papers_bp(repo))
+    app.register_blueprint(make_papers_bp(repo, summary_service))
     app.register_blueprint(make_search_bp(service))
 
     @app.get("/")

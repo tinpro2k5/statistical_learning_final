@@ -9,3 +9,4 @@ numpy>=1.24.0
 rank-bm25>=0.2.2
 sentencepiece>=0.2.0
 protobuf>=3.20.0
+bitsandbytes>=0.49.2

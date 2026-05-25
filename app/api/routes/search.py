@@ -36,6 +36,12 @@ def make_search_bp(service: SearchService) -> Blueprint:
                 "id_field":   "paper_id",
                 "id_type":    "str",
                 "id_value":   p.get("paper_id", ""),
+                "paper_id":   p.get("paper_id", ""),
+                "title":      p.get("title", ""),
+                "abstract":   p.get("abstract", ""),
+                "year":       p.get("year"),
+                "links":      p.get("links", []),
+                "score":      p.get("score"),
             }
             for p in ranked
         ]
