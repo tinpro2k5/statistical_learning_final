@@ -20,10 +20,12 @@ try:
     from app.db.normalizer import normalize_paper
     from app.db.repository import PaperRepository
     from app.ingestion.loader import iter_papers_from_file
+    from app.retrieval.fts5 import FTS5Retriever
 except ModuleNotFoundError:
     from statistical_learning_final.app.db.normalizer import normalize_paper
     from statistical_learning_final.app.db.repository import PaperRepository
     from statistical_learning_final.app.ingestion.loader import iter_papers_from_file
+    from statistical_learning_final.app.retrieval.fts5 import FTS5Retriever
 
 BATCH_SIZE = 1000
 
@@ -83,6 +85,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--allow_sample_when_no_sources", action="store_true")
     parser.add_argument("--sample_size",    type=int,   default=24)
     parser.add_argument(
+        "--replace_existing", action="store_true",
+        help="Delete the target SQLite DB before building.",
+    )
+    parser.add_argument(
+        "--skip_processed", action="store_true",
+        help="Do not write data/processed/papers_normalized.jsonl.",
+    )
+    parser.add_argument(
+        "--progress_every", type=int, default=50000,
+        help="Print progress every N raw records. Default: 50000.",
+    )
+    parser.add_argument(
         "--max_papers", type=int, default=0,
         help="Cap total papers across all sources (0 = unlimited).",
     )
@@ -95,9 +109,16 @@ def main() -> None:
     raw_dir       = Path(args.raw_dir)
     processed_dir = Path(args.processed_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
-    processed_dir.mkdir(parents=True, exist_ok=True)
+    if not args.skip_processed:
+        processed_dir.mkdir(parents=True, exist_ok=True)
 
     processed_file = processed_dir / "papers_normalized.jsonl"
+    db_path = Path(args.db_path)
+    if args.replace_existing:
+        for path in (db_path, db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm")):
+            if path.exists():
+                path.unlink()
+
     repo = PaperRepository(args.db_path)
     inserted = 0
     raw_count = 0
@@ -107,25 +128,63 @@ def main() -> None:
     if not args.input_file:
         raise ValueError("No --input_file provided. Provide a local .json/.jsonl to build from.")
 
-    with processed_file.open("w", encoding="utf-8") as fh:
-        print(f"Streaming from: {args.input_file}")
-        rows, raw_count = _balanced_sample_by_year(
-            _stream_from_file(args.input_file),
-            args.max_papers,
-        )
-        if args.max_papers > 0:
+    print(f"Streaming from: {args.input_file}")
+
+    if args.max_papers > 0:
+        processed_handle = None if args.skip_processed else processed_file.open("w", encoding="utf-8")
+        try:
+            rows, raw_count = _balanced_sample_by_year(
+                _stream_from_file(args.input_file),
+                args.max_papers,
+            )
             print(f"Balanced sample: {len(rows):,} papers across publication years")
 
-        for normalized in rows:
-            fh.write(json.dumps(normalized, ensure_ascii=True) + "\n")
-            batch.append(normalized)
-            if len(batch) >= BATCH_SIZE:
-                inserted += repo.bulk_upsert_normalized(batch)
-                batch.clear()
+            for normalized in rows:
+                if processed_handle is not None:
+                    processed_handle.write(json.dumps(normalized, ensure_ascii=True) + "\n")
+                batch.append(normalized)
+                if len(batch) >= BATCH_SIZE:
+                    inserted += repo.bulk_upsert_normalized(batch)
+                    batch.clear()
+        finally:
+            if processed_handle is not None:
+                processed_handle.close()
+    else:
+        processed_handle = None if args.skip_processed else processed_file.open("w", encoding="utf-8")
+        try:
+            for raw_record in _stream_from_file(args.input_file):
+                raw_count += 1
+                normalized = normalize_paper(raw_record)
+                if processed_handle is not None:
+                    processed_handle.write(json.dumps(normalized, ensure_ascii=True) + "\n")
+                batch.append(normalized)
+                if len(batch) >= BATCH_SIZE:
+                    inserted += repo.bulk_upsert_normalized(batch)
+                    batch.clear()
+                if args.progress_every > 0 and raw_count % args.progress_every == 0:
+                    print(
+                        f"Processed {raw_count:,} raw records | inserted {inserted:,}",
+                        flush=True,
+                    )
+        finally:
+            if processed_handle is not None:
+                processed_handle.close()
 
-        if batch:
-            inserted += repo.bulk_upsert_normalized(batch)
-            batch.clear()
+    if batch:
+        inserted += repo.bulk_upsert_normalized(batch)
+        batch.clear()
+
+    with repo.connect() as conn:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+    print("Rebuilding FTS5 index ...", flush=True)
+    fts = FTS5Retriever(args.db_path)
+    with fts._connect() as conn:
+        conn.execute("INSERT INTO papers_fts(papers_fts) VALUES ('rebuild')")
+        conn.commit()
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+    processed_label = "skipped" if args.skip_processed else str(processed_file.resolve())
 
     line = "-" * 50
     print(
@@ -134,7 +193,7 @@ def main() -> None:
         f"  Inserted      : {inserted:,}\n"
         f"  Total in DB   : {repo.count():,}\n"
         f"  DB path       : {Path(args.db_path).resolve()}\n"
-        f"  Processed file: {processed_file.resolve()}\n"
+        f"  Processed file: {processed_label}\n"
         f"{line}"
     )
 

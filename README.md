@@ -338,7 +338,15 @@ Raw JSONL file
 ```bash
 cd app
 
-# Full arXiv snapshot — balanced sample of 360 000 papers
+# Full arXiv snapshot — ingest all records
+python scripts/build_db.py \
+    --input_file data/raw/arxiv-metadata-oai-snapshot.jsonl \
+    --db_path    data/papers.sqlite3 \
+    --max_papers 0 \
+    --replace_existing \
+    --skip_processed
+
+# Balanced sample of 360 000 papers
 python scripts/build_db.py \
     --input_file    data/raw/arxiv-metadata-oai-snapshot.jsonl \
     --db_path       data/papers.sqlite3 \
@@ -360,6 +368,9 @@ python scripts/build_db.py \
 | `--raw_dir` | `data/raw` | Directory for raw input files |
 | `--processed_dir` | `data/processed` | Where to write `papers_normalized.jsonl` |
 | `--max_papers` | `0` (unlimited) | Cap total papers; `0` = ingest everything |
+| `--replace_existing` | `false` | Delete the target SQLite DB before building |
+| `--skip_processed` | `false` | Skip writing `papers_normalized.jsonl` to save disk space |
+| `--progress_every` | `50000` | Print progress every N raw records |
 
 #### Normalized canonical schema
 
@@ -498,10 +509,10 @@ The UI also supports additional filters to narrow results:
 
 #### Understanding the Score
 
-The `score` displayed next to each paper in the UI is the **predicted probability** (from `0.0` to `1.0`) computed by the Transformer cross-encoder model. 
+The `score` displayed next to each paper in the UI is a **search relevance score** (from `0.0` to `1.0`), not a raw Transformer probability.
 
 1. **Retrieval**: FTS5 (SQLite) rapidly fetches a broad pool of candidates (e.g., 100 papers) matching the keywords.
 2. **Reranking**: The Transformer reads the full text of the `(query, abstract)` pair.
-3. **Scoring**: The model outputs logits, which are converted via **softmax** to a probability representing how confident the model is that the paper is relevant to the query. Papers are then sorted descending by this score.
+3. **Scoring**: The final score combines title match, FTS/BM25 retrieval rank, Transformer reranker probability, and keyword-domain overlap. Exact title matches are pinned to `1.0`; phrase title matches are only boosted strongly when the paper also matches the supplied domain keywords.
 
 ---
