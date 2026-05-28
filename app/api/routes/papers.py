@@ -7,11 +7,13 @@ Fetch one or more papers by ID with optional field projection.
 """
 from __future__ import annotations
 
+import re
+
 from flask import Blueprint, jsonify, request
 
 from db.repository import PaperRepository
 import requests
-import re
+from services.paper_summary_service import PaperSummaryService
 
 
 def _extract_title_and_description(html: str) -> dict:
@@ -26,7 +28,7 @@ def _extract_title_and_description(html: str) -> dict:
     return {"title": title or "", "description": desc or ""}
 
 
-def make_papers_bp(repo: PaperRepository) -> Blueprint:
+def make_papers_bp(repo: PaperRepository, summary_service: PaperSummaryService) -> Blueprint:
     bp = Blueprint("papers", __name__)
 
     @bp.post("/ml-api/get-papers/v1.0")
@@ -55,6 +57,26 @@ def make_papers_bp(repo: PaperRepository) -> Blueprint:
             papers = projected
 
         return jsonify({"response": papers})
+
+    @bp.post("/ml-api/summarize-papers/v1.0")
+    def summarize_papers():
+        payload = request.get_json(silent=True) or {}
+        if not isinstance(payload, dict):
+            return jsonify({"error": "bad_request", "detail": "JSON body must be an object"}), 400
+
+        paper_list = payload.get("paper_list", [])
+        if not isinstance(paper_list, list):
+            return jsonify({"error": "bad_request", "detail": "paper_list must be a list"}), 400
+        if any(not isinstance(item, dict) for item in paper_list):
+            return jsonify({"error": "bad_request", "detail": "paper_list items must be objects"}), 400
+
+        try:
+            max_sentences = int(payload.get("max_sentences", 3) or 3)
+        except (TypeError, ValueError):
+            return jsonify({"error": "bad_request", "detail": "max_sentences must be an integer"}), 400
+
+        summaries = summary_service.summarize_papers(paper_list, max_sentences=max_sentences)
+        return jsonify({"response": summaries, "search_stats": {"nSummaries": len(summaries)}})
 
     @bp.post("/ml-api/fetch-url/v1.0")
     def fetch_url():

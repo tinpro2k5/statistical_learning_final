@@ -1,390 +1,592 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Scientific Literature Search Demo</title>
-    <style>
-      :root {
-        color-scheme: light;
-        --bg: #f6f3ee;
-        --panel: #ffffff;
-        --text: #1f2430;
-        --muted: #5f687a;
-        --accent: #0f766e;
-        --accent-2: #134e4a;
-        --border: #dde3ea;
-        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scientific Literature Search Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f3ee;
+      --panel: #ffffff;
+      --text: #1f2430;
+      --muted: #5f687a;
+      --accent: #0f766e;
+      --accent-2: #134e4a;
+      --border: #dde3ea;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    }
       * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: Arial, Helvetica, sans-serif;
-        color: var(--text);
-        background:
-          radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 30%),
-          radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 28%),
-          linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
-        min-height: 100vh;
-      }
-      .wrap {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 40px 20px 56px;
-      }
-      .hero {
-        display: grid;
-        gap: 18px;
-        margin-bottom: 24px;
-      }
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        width: fit-content;
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(15, 118, 110, 0.09);
-        color: var(--accent-2);
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-      }
-      h1 {
-        margin: 0;
-        font-size: clamp(32px, 4vw, 54px);
-        line-height: 1.02;
-        letter-spacing: -0.04em;
-      }
-      .subtitle {
-        max-width: 760px;
-        margin: 0;
-        font-size: 17px;
-        line-height: 1.7;
-        color: var(--muted);
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 360px 1fr;
-        gap: 20px;
-        align-items: start;
-      }
-      .card {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 22px;
-        box-shadow: var(--shadow);
-      }
-      .form-card {
-        padding: 22px;
-        position: sticky;
-        top: 18px;
-      }
-      .form-grid {
-        display: grid;
-        gap: 14px;
-      }
-      label {
-        display: block;
-        margin-bottom: 7px;
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--accent-2);
-      }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 28%),
+        linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 20px 56px;
+    }
+    .hero {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.09);
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+    .subtitle {
+      max-width: 760px;
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92));
+      border: 1px solid rgba(221, 227, 234, 0.92);
+      border-radius: 22px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+    .form-card {
+      padding: 22px;
+      position: sticky;
+      top: 18px;
+    }
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-2);
+    }
       input, textarea {
-        width: 100%;
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 12px 14px;
-        font: inherit;
-        background: #fff;
-        color: var(--text);
-      }
+      width: 100%;
+      border: 1px solid #dce4ec;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font: inherit;
+      background: linear-gradient(180deg, #ffffff, #fbfcfe);
+      color: var(--text);
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
       input:focus, textarea:focus {
-        outline: 2px solid rgba(15, 118, 110, 0.18);
-        border-color: var(--accent);
-      }
-      textarea { min-height: 110px; resize: vertical; }
-      .row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-      .btn {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-        border: 0;
-        border-radius: 14px;
-        padding: 13px 16px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        color: #fff;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .results-card {
-        padding: 22px;
-      }
-      .results-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .results-head h2 {
-        margin: 0;
-        font-size: 22px;
-      }
+      outline: 2px solid rgba(15, 118, 110, 0.18);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.08), inset 0 1px 2px rgba(15, 23, 42, 0.04);
+      transform: translateY(-1px);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(15, 118, 110, 0.28);
+    }
+
+    .btn:disabled {
+      opacity: 0.68;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-small {
+      padding: 8px 14px;
+      font-size: 13px;
+      border-radius: 12px;
+    }
+
+    .results-card {
+      padding: 22px;
+    }
+    .results-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .results-head h2 {
+      margin: 0;
+      font-size: 22px;
+    }
       .muted { color: var(--muted); }
-      .paper {
-        padding: 16px 0;
-        border-top: 1px solid var(--border);
-      }
+    .paper {
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
       .paper:first-child { border-top: 0; padding-top: 0; }
-      .paper-title {
-        margin: 0 0 6px;
-        font-size: 18px;
-        line-height: 1.35;
-      }
-      .meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 10px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-      .score {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: rgba(15, 118, 110, 0.09);
-        color: var(--accent-2);
-        font-weight: 700;
-      }
-      .abstract {
-        margin: 0;
-        color: #374151;
-        line-height: 1.65;
-      }
-      .abstract a {
-        color: var(--accent-2);
-        text-decoration: underline;
-        text-underline-offset: 2px;
-      }
-      .abstract pre {
-        overflow-x: auto;
-        padding: 12px 14px;
-        border-radius: 12px;
-        background: #f7f8fa;
-        border: 1px solid var(--border);
-      }
-      .abstract code {
-        font-family: Consolas, Monaco, 'Courier New', monospace;
-        font-size: 0.95em;
-      }
-      .links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin: 10px 0 0;
-      }
-      .link-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        max-width: 100%;
-        padding: 6px 10px;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: #fafbfc;
-        color: var(--accent-2);
-        text-decoration: none;
-        font-size: 13px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .empty {
-        padding: 18px;
-        border: 1px dashed var(--border);
-        border-radius: 18px;
-        color: var(--muted);
-        background: rgba(255, 255, 255, 0.6);
-      }
-      @media (max-width: 960px) {
+    .paper-title {
+      margin: 0 0 6px;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .score {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.09);
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+    .abstract {
+      margin: 0;
+      color: #374151;
+      line-height: 1.65;
+    }
+
+    .summary {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #f4f9f8, #eef8f6);
+      border: 1px solid rgba(15, 118, 110, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    }
+
+    .summary.is-loading {
+      opacity: 0.84;
+    }
+
+    .summary.is-error {
+      background: linear-gradient(180deg, #fff7ed, #fffaf3);
+      border-color: rgba(194, 65, 12, 0.22);
+    }
+
+    .summary.is-ready {
+      background: linear-gradient(180deg, #ecfdf5, #f4fffb);
+      border-color: rgba(15, 118, 110, 0.16);
+    }
+
+    .summary-label {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-2);
+    }
+
+    .summary-text {
+      margin: 0;
+      color: #334155;
+      line-height: 1.68;
+    }
+
+    .abstract a {
+      color: var(--accent-2);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .abstract pre {
+      overflow-x: auto;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f7f8fa;
+      border: 1px solid var(--border);
+    }
+    .abstract code {
+      font-family: Consolas, Monaco, 'Courier New', monospace;
+      font-size: 0.95em;
+    }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0 0;
+    }
+    .link-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(221, 227, 234, 0.95);
+      background: linear-gradient(180deg, #fafbfc, #f3f7fa);
+      color: var(--accent-2);
+      text-decoration: none;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+    }
+    .empty {
+      padding: 18px;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.6);
+    }
+    @media (max-width: 960px) {
         .grid { grid-template-columns: 1fr; }
         .form-card { position: static; }
-      }
-      @media (max-width: 640px) {
+    }
+    @media (max-width: 640px) {
         .wrap { padding: 22px 14px 40px; }
         .row { grid-template-columns: 1fr; }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="wrap">
-      <section class="hero">
-        <div class="badge">Flask demo · FTS5 retrieval · Transformer reranker</div>
-        <h1>Scientific literature search demo</h1>
-        <p class="subtitle">
-          Search the local SQLite database, inspect reranked results, and preview
-          article metadata directly in the browser.
-        </p>
-      </section>
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="badge">Flask demo · FTS5 retrieval · Transformer reranker</div>
+      <h1>Scientific literature search demo</h1>
+      <p class="subtitle">
+        Search the local SQLite database, inspect reranked results, and preview
+        article metadata directly in the browser.
+      </p>
+    </section>
 
-      <section class="grid">
-        <aside class="card form-card">
-          <form method="post" action="/search" class="form-grid">
-            <div>
-              <label for="query">Query</label>
-              <textarea id="query" name="query" placeholder="e.g. neural machine translation">{{ query or "" }}</textarea>
-            </div>
-            <div>
-              <label for="keywords">Keywords</label>
-              <input id="keywords" name="keywords" type="text" value="{{ keywords or '' }}" placeholder="e.g. transformer, citation" />
-            </div>
-            <div class="row">
-              <div>
-                <label for="limit">Limit</label>
-                <input id="limit" name="limit" type="number" min="1" max="50" value="{{ limit or 10 }}" />
-              </div>
-              <div>
-                <label for="year">Year</label>
-                <input id="year" name="year" type="text" value="{{ year or '' }}" placeholder="optional" />
-              </div>
-            </div>
-            <div>
-              <label for="collection">Collection</label>
-              <input id="collection" name="collection" type="text" value="{{ collection or '' }}" placeholder="optional" />
-            </div>
-            <button class="btn" type="submit">Search</button>
-          </form>
-        </aside>
-
-        <section class="card results-card">
-          <div class="results-head">
-            <h2>Results</h2>
-            <div class="muted">{{ result_count if result_count is not none else 0 }} papers</div>
+    <section class="grid">
+      <aside class="card form-card">
+        <form method="post" action="/search" class="form-grid">
+          <div>
+            <label for="query">Query</label>
+            <textarea id="query" name="query" placeholder="e.g. neural machine translation">{{ query or "" }}</textarea>
           </div>
+          <div>
+            <label for="keywords">Keywords</label>
+              <input id="keywords" name="keywords" type="text" value="{{ keywords or '' }}" placeholder="e.g. transformer, citation" />
+          </div>
+          <div class="row">
+            <div>
+              <label for="limit">Limit</label>
+              <input id="limit" name="limit" type="number" min="1" max="50" value="{{ limit or 10 }}" />
+            </div>
+            <div>
+              <label for="year">Year</label>
+              <input id="year" name="year" type="text" value="{{ year or '' }}" placeholder="optional" />
+            </div>
+          </div>
+          <div>
+            <label for="collection">Collection</label>
+              <input id="collection" name="collection" type="text" value="{{ collection or '' }}" placeholder="optional" />
+          </div>
+          <button class="btn" type="submit">Search</button>
+        </form>
+      </aside>
 
-          {% if results %}
-            {% for paper in results %}
-              <article class="paper">
-                <h3 class="paper-title">{{ paper.title }}</h3>
-                <div class="meta">
-                  <span>Paper ID: {{ paper.paper_id }}</span>
-                  {% if paper.year %}<span>Year: {{ paper.year }}</span>{% endif %}
-                  {% if paper.collection %}<span>Collection: {{ paper.collection }}</span>{% endif %}
-                  {% if paper.links %}<span>{{ paper.links|length }} link{{ '' if paper.links|length == 1 else 's' }}</span>{% endif %}
-                  {% if paper.score is not none %}<span class="score">Score {{ '%.2f'|format(paper.score * 100) }}%</span>{% endif %}
-                </div>
-                <div class="abstract markdown" data-markdown='{{ (paper.abstract or "No abstract available.") | tojson }}'></div>
-                {% if paper.links %}
-                  <div class="links">
-                    {% for link in paper.links %}
-                      {% if link %}
-                        <a class="link-chip" href="{{ link }}" target="_blank" rel="noreferrer noopener">{{ link }}</a>
-                      {% endif %}
-                    {% endfor %}
-                  </div>
-                {% endif %}
-              </article>
+      <section class="card results-card">
+        <div class="results-head">
+          <h2>Results</h2>
+          <div class="muted">{{ result_count if result_count is not none else 0 }} papers</div>
+        </div>
+
+        {% if results %}
+        {% for paper in results %}
+        <article class="paper" data-paper-id="{{ paper.paper_id }}" data-collection="{{ paper.collection or 'local' }}">
+          <h3 class="paper-title">{{ paper.title }}</h3>
+          <div class="meta">
+            <span>Paper ID: {{ paper.paper_id }}</span>
+            {% if paper.year %}<span>Year: {{ paper.year }}</span>{% endif %}
+            {% if paper.collection %}<span>Collection: {{ paper.collection }}</span>{% endif %}
+            {% if paper.links %}<span>{{ paper.links|length }} link{{ '' if paper.links|length == 1 else 's' }}</span>{%
+            endif %}
+            {% if paper.score is not none %}<span class="score">Score {{ '%.2f'|format(paper.score * 100) }}%</span>{%
+            endif %}
+          </div>
+          <div class="abstract markdown" data-markdown='{{ (paper.abstract or "No abstract available.") | tojson }}'>
+          </div>
+          <div class="summary" data-summary-slot>
+            <button type="button" class="btn btn-small" data-summary-action
+              data-pid="{{ paper.paper_id }}" data-collection="{{ paper.collection or 'local' }}">
+              Generate Summary (LLM)
+            </button>
+          </div>
+          {% if paper.links %}
+          <div class="links">
+            {% for link in paper.links %}
+            {% if link %}
+            <a class="link-chip" href="{{ link }}" target="_blank" rel="noreferrer noopener">{{ link }}</a>
+            {% endif %}
             {% endfor %}
-          {% elif request.method == 'POST' or query or keywords %}
-            <div class="empty">
-              No results found for your query. Try adjusting the keywords or filters.
-            </div>
-          {% else %}
-            <div class="empty">
-              No search run yet. Enter a query on the left and press Search.
-            </div>
+          </div>
           {% endif %}
-        </section>
+        </article>
+        {% endfor %}
+        {% elif request.method == 'POST' or query or keywords %}
+        <div class="empty">
+          No results found for your query. Try adjusting the keywords or filters.
+        </div>
+        {% else %}
+        <div class="empty">
+          No search run yet. Enter a query on the left and press Search.
+        </div>
+        {% endif %}
       </section>
-    </main>
-    <script>
-      function escapeHtml(value) {
-        return value
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
+    </section>
+  </main>
+  <script>
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
-      function inlineMarkdown(text) {
-        return text
-          .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>')
-          .replace(/`([^`]+)`/g, '<code>$1</code>')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/(^|\W)\*([^*]+)\*(?=\W|$)/g, '$1<em>$2</em>');
-      }
+    function inlineMarkdown(text) {
+      return text
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|\W)\*([^*]+)\*(?=\W|$)/g, '$1<em>$2</em>');
+    }
 
-      function renderMarkdown(raw) {
-        const text = String(raw || '');
-        const escaped = escapeHtml(text);
-        const lines = escaped.split(/\r?\n/);
-        const blocks = [];
-        let listItems = [];
+    function renderMarkdown(raw) {
+      const text = String(raw || '');
+      const escaped = escapeHtml(text);
+      const lines = escaped.split(/\r?\n/);
+      const blocks = [];
+      let listItems = [];
 
-        function flushList() {
-          if (listItems.length) {
-            blocks.push('<ul>' + listItems.map((item) => '<li>' + inlineMarkdown(item) + '</li>').join('') + '</ul>');
-            listItems = [];
-          }
+      function flushList() {
+        if (listItems.length) {
+          blocks.push('<ul>' + listItems.map((item) => '<li>' + inlineMarkdown(item) + '</li>').join('') + '</ul>');
+          listItems = [];
         }
+      }
 
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) {
-            flushList();
-            continue;
-          }
-          if (/^[-*+]\s+/.test(trimmed)) {
-            listItems.push(trimmed.replace(/^[-*+]\s+/, ''));
-            continue;
-          }
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
           flushList();
-          blocks.push('<p>' + inlineMarkdown(trimmed) + '</p>');
+          continue;
         }
-
+        if (/^[-*+]\s+/.test(trimmed)) {
+          listItems.push(trimmed.replace(/^[-*+]\s+/, ''));
+          continue;
+        }
         flushList();
-        return blocks.join('');
+        blocks.push('<p>' + inlineMarkdown(trimmed) + '</p>');
       }
 
-      document.querySelectorAll('[data-markdown]').forEach((node) => {
-        try {
-          node.innerHTML = renderMarkdown(JSON.parse(node.dataset.markdown || '""'));
-        } catch (error) {
-          node.textContent = node.dataset.markdown || '';
-        }
-      });
+      flushList();
+      return blocks.join('');
+    }
 
-      window.addEventListener('load', () => {
-        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-          window.MathJax.typesetPromise();
-        }
-      });
-    </script>
-    <script>
-      window.MathJax = {
-        startup: {
-          typeset: true,
-        },
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']],
-          processEscapes: true,
-        },
-        options: {
-          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-        },
+    document.querySelectorAll('[data-markdown]').forEach((node) => {
+      try {
+        node.innerHTML = renderMarkdown(JSON.parse(node.dataset.markdown || '""'));
+      } catch (error) {
+        node.textContent = node.dataset.markdown || '';
+      }
+    });
+
+    // --- Progressive summary loader ---------------------------------
+    function getPaperNodes() {
+      return Array.from(document.querySelectorAll('[data-paper-id]'));
+    }
+
+    function paperRefFromNode(node) {
+      return {
+        paper_id: node.dataset.paperId || '',
+        collection: node.dataset.collection || 'local',
       };
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  </body>
+    }
+
+    const summaryRequestTimers = new Map();
+    const summaryInFlight = new Set();
+    const SUMMARY_DEBOUNCE_MS = 300;
+
+    function setSummaryButtonDisabled(paperId, disabled) {
+      const card = getPaperNodes().find((node) => node.dataset.paperId === String(paperId));
+      if (!card) return;
+      const button = card.querySelector('[data-summary-action]');
+      if (!button) return;
+      button.disabled = disabled;
+      button.textContent = disabled ? 'Generating Summary...' : 'Generate Summary (LLM)';
+    }
+
+    function updateSummaryCard(paperId, summary, sourceKind) {
+      const card = getPaperNodes().find((node) => node.dataset.paperId === String(paperId));
+      if (!card) return;
+      const slot = card.querySelector('[data-summary-slot]');
+      if (!slot) return;
+      const label = sourceKind === 'pdf' ? 'Summary · full text PDF' : (sourceKind === 'html' ? 'Summary · full text page' : (sourceKind === 'db_full_text' ? 'Summary · local full text' : 'Summary · abstract fallback'));
+      slot.classList.remove('is-loading', 'is-error');
+      slot.classList.add('is-ready');
+      slot.innerHTML = `<div class="summary-label">${label}</div><div class="summary-text">${escapeHtml(summary || 'No summary available.')}</div>`;
+    }
+
+    function markSummaryError(paperId, message) {
+      const card = getPaperNodes().find((node) => node.dataset.paperId === String(paperId));
+      if (!card) return;
+      const slot = card.querySelector('[data-summary-slot]');
+      if (!slot) return;
+      const collection = card.dataset.collection || 'local';
+      slot.classList.remove('is-loading');
+      slot.classList.add('is-error');
+      slot.innerHTML = `
+        <div class="summary-label">Summary</div>
+        <div class="summary-text">${escapeHtml(message)}</div>
+        <button type="button" class="btn btn-small" data-summary-action data-pid="${escapeHtml(paperId)}" data-collection="${escapeHtml(collection)}">
+          Retry Summary
+        </button>
+      `;
+    }
+
+    async function runSummaryRequest(paperId, collection) {
+      if (summaryInFlight.has(paperId)) return;
+      summaryInFlight.add(paperId);
+      setSummaryButtonDisabled(paperId, true);
+
+      const card = getPaperNodes().find((node) => node.dataset.paperId === String(paperId));
+      const slot = card ? card.querySelector('[data-summary-slot]') : null;
+      if (slot) {
+        slot.classList.remove('is-error', 'is-ready');
+        slot.classList.add('is-loading');
+        slot.innerHTML = `<div class="summary-label">Summary</div><p class="summary-text">Generating summary with LLM... Please wait.</p>`;
+      }
+
+      try {
+        const data = await fetchJson('/ml-api/summarize-papers/v1.0', {
+          paper_list: [{ paper_id: paperId, collection: collection }],
+          max_sentences: 3
+        });
+        const summaries = Array.isArray(data.response) ? data.response : [];
+        if (summaries.length > 0) {
+          const item = summaries[0];
+          updateSummaryCard(item.paper_id, item.summary, item.source_kind);
+          if (window.MathJax && typeof window.MathJax.typesetPromise === 'function' && slot) {
+            window.MathJax.typesetPromise([slot]);
+          }
+        } else {
+          markSummaryError(paperId, 'No summary returned.');
+        }
+      } catch (err) {
+        markSummaryError(paperId, 'Summary generation failed.');
+      } finally {
+        summaryInFlight.delete(paperId);
+        setSummaryButtonDisabled(paperId, false);
+      }
+    }
+
+    async function fetchJson(url, payload) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        cache: 'no-store',
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+      return response.json();
+    }
+
+    async function requestSummary(paperId, collection) {
+      if (summaryInFlight.has(paperId)) return;
+
+      const existingTimer = summaryRequestTimers.get(paperId);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      const timerId = setTimeout(() => {
+        summaryRequestTimers.delete(paperId);
+        runSummaryRequest(paperId, collection);
+      }, SUMMARY_DEBOUNCE_MS);
+
+      summaryRequestTimers.set(paperId, timerId);
+    }
+
+    window.addEventListener('load', () => {
+      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        window.MathJax.typesetPromise();
+      }
+      document.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-summary-action]');
+        if (!b) return;
+        const pid = b.getAttribute('data-pid') || b.closest('[data-paper-id]')?.dataset.paperId;
+        const coll = b.getAttribute('data-collection') || b.closest('[data-paper-id]')?.dataset.collection || 'local';
+        if (pid) requestSummary(pid, coll);
+      });
+    });
+  </script>
+  <script>
+    window.MathJax = {
+      startup: {
+        typeset: true,
+      },
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+      },
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</body>
 </html>

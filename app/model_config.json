@@ -8,5 +8,23 @@
     "batch_size": 64,
     "query_template": "query: {query}",
     "candidate_template": "document title: {title} document abstract: {abstract}"
+  },
+  "summary_model": {
+    "enabled": true,
+    "kind": "llm",
+    "model_name_or_path": "Qwen/Qwen2.5-1.5B-Instruct",
+    "device": "auto",
+    "load_in_4bit": true,
+    "load_in_8bit": false,
+    "max_input_words": 4000,
+    "max_new_tokens": 256,
+    "min_new_tokens": 64,
+    "fallback_sentences": 3,
+    "do_sample": false,
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "repetition_penalty": 1.1,
+    "system_prompt": "You are an expert academic assistant. Your task is to write a concise, high-level summary of a research paper in plain English. RULES: (1) Write complete English sentences explaining the key ideas, methods, and findings. (2) Do NOT copy raw equations or theorem proofs from the paper. (3) You MAY reference mathematical concepts by name (e.g., 'null space', 'quaternion algebra') but describe them in words. (4) If you include a formula, keep it as one complete math expression in a single pair of delimiters. Do not wrap individual variables or symbols separately, and do not nest extra $ signs inside an existing formula.",
+    "user_prompt_template": "Write a 4 to 6 sentence summary of the following research paper text. Focus on the motivation, key contributions, and main results. Do not copy equations.\n\n{text}"
   }
 }
