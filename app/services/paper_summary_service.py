@@ -299,6 +299,13 @@ class PaperSummaryService:
         )
         return " ".join(sentence for _, _, sentence in chosen)
 
+    def _lead_summary(self, text: str, max_sentences: int) -> str:
+        sentences = self._split_sentences(text)
+        if not sentences:
+            return ""
+        max_sentences = max(1, min(int(max_sentences or self.fallback_sentences), 5))
+        return " ".join(sentences[:max_sentences])
+
     def _generate_with_model(self, text: str) -> str:
         if self.summary_model is None:
             return ""
@@ -377,12 +384,33 @@ class PaperSummaryService:
                 or ref.get("id_value", ref.get("paper_id", ref.get("id", "")))
             ).strip()
             collection = paper.get("collection") or ref.get("collection") or "local"
-            source_url = self.fetcher.choose_source_url(paper)
-            fetched_text, final_url, source_kind = self.fetcher.fetch_full_text_from_url(source_url)
             abstract_text = normalize_text(paper.get("abstract"))
-            fallback_text = normalize_text(paper.get("full_text")) or abstract_text
-            text_to_summarize = fetched_text or fallback_text
-            final_source_kind = source_kind if fetched_text else ("db_full_text" if normalize_text(paper.get("full_text")) else "abstract_fallback")
+            model_available = self._ensure_summary_model() is not None
+
+            if not model_available and abstract_text:
+                source_url = self.fetcher.choose_source_url(paper)
+                final_url = source_url
+                final_source_kind = "abstract_fallback"
+                summary = self._sanitize_summary(
+                    self._lead_summary(abstract_text, max_sentences=max_sentences)
+                )
+                response.append(
+                    {
+                        "paper_id": paper_id,
+                        "collection": collection,
+                        "source_url": final_url,
+                        "source_kind": final_source_kind,
+                        "summary": summary or "Summary unavailable for this paper.",
+                    }
+                )
+                continue
+            else:
+                source_url = self.fetcher.choose_source_url(paper)
+                fetched_text, final_url, source_kind = self.fetcher.fetch_full_text_from_url(source_url)
+                fallback_text = normalize_text(paper.get("full_text")) or abstract_text
+                text_to_summarize = fetched_text or fallback_text
+                final_source_kind = source_kind if fetched_text else ("db_full_text" if normalize_text(paper.get("full_text")) else "abstract_fallback")
+
             summary = self.summarize(
                 text_to_summarize,
                 max_sentences=max_sentences,
