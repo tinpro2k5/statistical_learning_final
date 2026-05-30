@@ -183,10 +183,51 @@ statistical_learning_final/
 ## What is NOT included
 
 - Raw paper corpora (arXiv JSONL snapshot, SciFact, SciDocs raw files).
-- Prebuilt SQLite databases (`data/papers.sqlite3`).
+- Prebuilt SQLite databases (`app/data/papers.sqlite3`).
 - Trained model checkpoints (`transformer_training/outputs/`).
 
-If these files are too large for submission, upload them to Google Drive and include the shared link with the report.
+These large artifacts are submitted through Google Drive with a folder structure
+that mirrors this repository. After downloading the Drive folder, copy its
+contents into the repository root so the paths line up with the code.
+
+```text
+Transformer_NLP_Final_Project/
+├── app/
+│   └── data/
+│       ├── papers.sqlite3
+│       └── raw/
+│           ├── arxiv-metadata-oai-snapshot.jsonl
+│           └── sample_papers.json
+├── data/
+│   └── raw/
+│       ├── scifact/
+│       │   └── qrels/
+│       └── scidocs/
+│           └── qrels/
+└── transformer_training/
+    └── outputs/
+        ├── scibert_combined/
+        │   ├── hf_checkpoints/
+        │   │   └── checkpoint-754/
+        │   ├── test_metrics.json
+        │   ├── training_config.json
+        │   └── training_summary.json
+        ├── scibert_hardx2/
+        ├── roberta-base_combined/
+        └── roberta-base_hardx2/
+```
+
+Recommended restore command:
+
+```bash
+cp -a /path/to/Transformer_NLP_Final_Project/. /path/to/statistical_learning_final/
+```
+
+Google Drive folder:
+
+```text
+<PASTE_GOOGLE_DRIVE_FOLDER_LINK_HERE>
+```
 
 ---
 
@@ -738,11 +779,12 @@ For final submission, include or link the following artifacts:
 | Artifact | Path / Note |
 |---|---|
 | Source code | Repository root, especially `transformer_training/` and `app/` |
-| Training data | `data/scifact*`, `data/scidocs*`, `data/combined*` or Google Drive links |
-| Search corpus | `app/data/raw/arxiv-metadata-oai-snapshot.jsonl` or Google Drive link |
-| SQLite index | `app/data/papers.sqlite3` or rebuild command from this README |
-| Fine-tuned weights | `transformer_training/outputs/scibert_combined/hf_checkpoints/checkpoint-754` or Google Drive link |
-| Evaluation results | `transformer_training/outputs/*/test_metrics.json` |
+| Google Drive artifacts | `Transformer_NLP_Final_Project/` folder, copied into the repository root when restored |
+| Training data | `data/raw/scifact/`, `data/raw/scidocs/`, and preprocessed JSONL files if available |
+| Search corpus | `app/data/raw/arxiv-metadata-oai-snapshot.jsonl` |
+| SQLite index | `app/data/papers.sqlite3` |
+| Fine-tuned weights | `transformer_training/outputs/scibert_combined/hf_checkpoints/checkpoint-754` |
+| Evaluation results | `transformer_training/outputs/*/test_metrics.json`, `training_config.json`, `training_summary.json` |
 | Report | Dataset description, split method, model config, metrics table, and web app screenshots |
 
 Before presentation:
