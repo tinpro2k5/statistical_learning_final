@@ -23,6 +23,15 @@ This project satisfies the **Transformer-based NLP Application** requirements as
 | Evaluation metrics | NDCG@10, MAP, MRR, Hit@K, Accuracy, Precision, Recall, F1 |
 | Web application | Flask UI in `app/`, backed by SQLite FTS5 retrieval, Transformer reranking, summary generation, and result metadata enrichment |
 
+Data processing is intentionally query-centric.  Raw BEIR files
+(`corpus.jsonl`, `queries.jsonl`, `qrels/*.tsv`) are converted into
+`(query, title, abstract, label)` JSONL rows.  Positive pairs come from qrels
+with relevance score > 0.  Negative pairs mix BM25 hard negatives
+(lexically similar but not relevant) and random negatives.  Splits are made by
+query id, not by individual pair, so the same query does not leak across
+train/validation/test.  Test sets use random negatives only (`n_hard=0`) for a
+less biased final evaluation.
+
 The app currently points to:
 
 ```json
