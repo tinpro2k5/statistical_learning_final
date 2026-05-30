@@ -55,7 +55,10 @@ class PaperRepository:
                     year         INTEGER,
                     doi          TEXT NOT NULL DEFAULT '',
                     primary_category TEXT NOT NULL DEFAULT '',
-                    links        TEXT NOT NULL DEFAULT '[]'
+                    links        TEXT NOT NULL DEFAULT '[]',
+                    citation_count INTEGER,
+                    citation_updated_at TEXT NOT NULL DEFAULT '',
+                    venue_updated_at TEXT NOT NULL DEFAULT ''
                 )
                 """
             )
@@ -77,6 +80,18 @@ class PaperRepository:
             if "links" not in rowcols:
                 conn.execute(
                     "ALTER TABLE papers ADD COLUMN links TEXT NOT NULL DEFAULT '[]'"
+                )
+            if "citation_count" not in rowcols:
+                conn.execute(
+                    "ALTER TABLE papers ADD COLUMN citation_count INTEGER"
+                )
+            if "citation_updated_at" not in rowcols:
+                conn.execute(
+                    "ALTER TABLE papers ADD COLUMN citation_updated_at TEXT NOT NULL DEFAULT ''"
+                )
+            if "venue_updated_at" not in rowcols:
+                conn.execute(
+                    "ALTER TABLE papers ADD COLUMN venue_updated_at TEXT NOT NULL DEFAULT ''"
                 )
 
     # ------------------------------------------------------------------
@@ -155,14 +170,15 @@ class PaperRepository:
     _UPSERT_SQL = """
         INSERT INTO papers (
             paper_id, collection, title, abstract, full_text, venue, keywords,
-            authors_json, authors_text, year, doi, primary_category, links
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            authors_json, authors_text, year, doi, primary_category, links,
+            citation_count, citation_updated_at, venue_updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(paper_id) DO UPDATE SET
             collection   = excluded.collection,
             title        = excluded.title,
             abstract     = excluded.abstract,
             full_text    = excluded.full_text,
-            venue        = excluded.venue,
+            venue        = COALESCE(NULLIF(excluded.venue, ''), papers.venue),
             keywords     = excluded.keywords,
             authors_json = excluded.authors_json,
             authors_text = excluded.authors_text,
@@ -170,6 +186,9 @@ class PaperRepository:
             doi          = excluded.doi
             , primary_category = excluded.primary_category
             , links = excluded.links
+            , citation_count = COALESCE(excluded.citation_count, papers.citation_count)
+            , citation_updated_at = COALESCE(NULLIF(excluded.citation_updated_at, ''), papers.citation_updated_at)
+            , venue_updated_at = COALESCE(NULLIF(excluded.venue_updated_at, ''), papers.venue_updated_at)
     """
 
     def _upsert_params(self, normalized: dict[str, Any]) -> tuple:
@@ -187,6 +206,9 @@ class PaperRepository:
             normalized["doi"],
             normalized.get("primary_category", ""),
             normalized.get("links", "[]"),
+            normalized.get("citation_count"),
+            normalized.get("citation_updated_at", ""),
+            normalized.get("venue_updated_at", ""),
         )
 
     def upsert_paper(self, paper: dict[str, Any]) -> dict[str, Any]:
@@ -212,6 +234,41 @@ class PaperRepository:
                 conn.execute(self._UPSERT_SQL, self._upsert_params(paper))
                 count += 1
         return count
+
+    def update_paper_metadata(
+        self,
+        paper_id: str,
+        *,
+        citation_count: int | None = None,
+        citation_updated_at: str | None = None,
+        venue: str | None = None,
+        venue_updated_at: str | None = None,
+    ) -> None:
+        assignments: list[str] = []
+        params: list[Any] = []
+
+        if citation_count is not None:
+            assignments.append("citation_count = ?")
+            params.append(citation_count)
+        if citation_updated_at is not None:
+            assignments.append("citation_updated_at = ?")
+            params.append(citation_updated_at)
+        if venue is not None:
+            assignments.append("venue = ?")
+            params.append(venue)
+        if venue_updated_at is not None:
+            assignments.append("venue_updated_at = ?")
+            params.append(venue_updated_at)
+
+        if not assignments:
+            return
+
+        params.append(paper_id)
+        with self.connect() as conn:
+            conn.execute(
+                f"UPDATE papers SET {', '.join(assignments)} WHERE paper_id = ?",
+                params,
+            )
 
     # ------------------------------------------------------------------
     # Serialization
@@ -241,4 +298,7 @@ class PaperRepository:
             "doi":         row["doi"],
             "primary_category": row["primary_category"] if "primary_category" in keys else "",
             "links":        links,
+            "citation_count": row["citation_count"] if "citation_count" in keys else None,
+            "citation_updated_at": row["citation_updated_at"] if "citation_updated_at" in keys else "",
+            "venue_updated_at": row["venue_updated_at"] if "venue_updated_at" in keys else "",
         }

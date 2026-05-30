@@ -40,6 +40,11 @@ def make_search_bp(service: SearchService) -> Blueprint:
                 "title":      p.get("title", ""),
                 "abstract":   p.get("abstract", ""),
                 "year":       p.get("year"),
+                "venue":      p.get("venue", ""),
+                "citation_count": p.get("citation_count"),
+                "citation_updated_at": p.get("citation_updated_at", ""),
+                "venue_updated_at": p.get("venue_updated_at", ""),
+                "rank":       p.get("rank"),
                 "links":      p.get("links", []),
                 "score":      p.get("score"),
             }

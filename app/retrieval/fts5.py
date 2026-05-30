@@ -533,4 +533,7 @@ class FTS5Retriever:
             "doi":         row["doi"],
             "primary_category": row["primary_category"] if "primary_category" in row.keys() else "",
             "links":       links,
+            "citation_count": row["citation_count"] if "citation_count" in row.keys() else None,
+            "citation_updated_at": row["citation_updated_at"] if "citation_updated_at" in row.keys() else "",
+            "venue_updated_at": row["venue_updated_at"] if "venue_updated_at" in row.keys() else "",
         }

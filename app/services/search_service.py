@@ -22,6 +22,7 @@ from db.repository import PaperRepository
 from retrieval.base import Retriever
 from reranking.base import Reranker
 from search_terms import acronym_key, normalize_scientific_symbols
+from services.paper_metadata_enricher import PaperMetadataEnricher
 
 # How many FTS candidates to fetch before reranking.
 # Enough headroom so reranker can discriminate; small enough to stay fast.
@@ -90,10 +91,12 @@ class SearchService:
         repo: PaperRepository,
         retriever: Retriever,
         reranker: Reranker,
+        metadata_enricher: PaperMetadataEnricher | None = None,
     ) -> None:
         self.repo = repo
         self.retriever = retriever
         self.reranker = reranker
+        self.metadata_enricher = metadata_enricher
 
     # ------------------------------------------------------------------
     # Public API
@@ -301,16 +304,8 @@ class SearchService:
                 item[5].get("title", ""),
             )
         )
-        return [
-            {
-                **paper,
-                "score": round(min(1.0, final_score), 6),
-                "model_score": round(model_score, 6),
-                "retrieval_score": round(retrieval_score, 6),
-                "domain_score": round(domain_score, 6),
-                "title_score": round(title_score, 6),
-            }
-            for (
+        results = []
+        for rank, (
                 _,
                 final_score,
                 domain_score,
@@ -318,8 +313,21 @@ class SearchService:
                 retrieval_score,
                 paper,
                 title_score,
-            ) in ranked[:limit]
-        ]
+            ) in enumerate(ranked[:limit], start=1):
+            results.append(
+                {
+                    **paper,
+                    "rank": rank,
+                    "score": round(min(1.0, final_score), 6),
+                    "model_score": round(model_score, 6),
+                    "retrieval_score": round(retrieval_score, 6),
+                    "domain_score": round(domain_score, 6),
+                    "title_score": round(title_score, 6),
+                }
+            )
+        if self.metadata_enricher is not None:
+            return self.metadata_enricher.enrich_papers(results)
+        return results
 
     def search(
         self,

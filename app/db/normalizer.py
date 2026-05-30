@@ -102,6 +102,20 @@ def coerce_year(value: Any) -> int | None:
     return None
 
 
+def coerce_int(value: Any) -> int | None:
+    """Parse a non-negative integer from heterogeneous metadata."""
+    if value in (None, ""):
+        return None
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        match = re.search(r"\d+", str(value))
+        if not match:
+            return None
+        number = int(match.group(0))
+    return number if number >= 0 else None
+
+
 def _derive_year_from_dates(paper: dict[str, Any]) -> int | None:
     """Best-effort year extraction for arXiv-style metadata."""
     versions = paper.get("versions", [])
@@ -151,6 +165,15 @@ def normalize_links(paper: dict[str, Any]) -> str:
     return json.dumps(links, ensure_ascii=True)
 
 
+def normalize_venue(paper: dict[str, Any]) -> str:
+    """Return the best available journal/conference reference."""
+    for key in ("venue", "Venue", "journal-ref", "journal_ref", "journal", "conference"):
+        value = normalize_text(paper.get(key, ""))
+        if value:
+            return value
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # Main normalization
 # ---------------------------------------------------------------------------
@@ -175,7 +198,7 @@ def normalize_paper(paper: dict[str, Any]) -> dict[str, Any]:
         ),
         "primary_category": normalize_text(paper.get("primary_category", paper.get("primaryCategory", ""))),
         "links": normalize_links(paper),
-        "venue": normalize_text(paper.get("venue", paper.get("Venue", ""))),
+        "venue": normalize_venue(paper),
         "keywords": normalize_text(
             paper.get("keywords", paper.get("Keyword", ""))
         ),
@@ -185,4 +208,12 @@ def normalize_paper(paper: dict[str, Any]) -> dict[str, Any]:
             paper.get("year", paper.get("Year", paper.get("PublicationYear")))
         ) or _derive_year_from_dates(paper),
         "doi": normalize_text(paper.get("doi", paper.get("DOI", ""))),
+        "citation_count": coerce_int(
+            paper.get(
+                "citation_count",
+                paper.get("cited_by_count", paper.get("cites", paper.get("n_citation"))),
+            )
+        ),
+        "citation_updated_at": normalize_text(paper.get("citation_updated_at", "")),
+        "venue_updated_at": normalize_text(paper.get("venue_updated_at", "")),
     }

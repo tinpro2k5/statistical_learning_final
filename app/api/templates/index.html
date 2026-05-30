@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Scientific Literature Search Demo</title>
+  <title>Scientific Literature Search</title>
   <style>
     :root {
       color-scheme: light;
@@ -42,18 +42,18 @@
       align-items: center;
       width: fit-content;
       padding: 8px 12px;
-      border-radius: 999px;
+      border-radius: 8px;
       background: rgba(15, 118, 110, 0.09);
       color: var(--accent-2);
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.02em;
+      letter-spacing: 0;
     }
     h1 {
       margin: 0;
       font-size: clamp(32px, 4vw, 54px);
       line-height: 1.02;
-      letter-spacing: -0.04em;
+      letter-spacing: 0;
     }
     .subtitle {
       max-width: 760px;
@@ -71,7 +71,7 @@
     .card {
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.92));
       border: 1px solid rgba(221, 227, 234, 0.92);
-      border-radius: 22px;
+      border-radius: 8px;
       box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
     .form-card {
@@ -93,7 +93,7 @@
       input, textarea {
       width: 100%;
       border: 1px solid #dce4ec;
-      border-radius: 16px;
+      border-radius: 8px;
       padding: 12px 14px;
       font: inherit;
       background: linear-gradient(180deg, #ffffff, #fbfcfe);
@@ -124,7 +124,7 @@
       align-items: center;
       gap: 8px;
       border: 0;
-      border-radius: 14px;
+      border-radius: 8px;
       padding: 13px 16px;
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
       color: #fff;
@@ -149,7 +149,7 @@
     .btn-small {
       padding: 8px 14px;
       font-size: 13px;
-      border-radius: 12px;
+      border-radius: 8px;
     }
 
     .results-card {
@@ -177,23 +177,56 @@
       font-size: 18px;
       line-height: 1.35;
     }
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+    .paper-facts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
       margin-bottom: 10px;
       font-size: 13px;
       color: var(--muted);
     }
-    .score {
-      display: inline-flex;
+    .fact {
+      min-height: 34px;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(15, 118, 110, 0.09);
-      color: var(--accent-2);
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 10px;
+      border: 1px solid rgba(221, 227, 234, 0.9);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+    .fact-label {
+      color: var(--muted);
+      font-size: 12px;
       font-weight: 700;
+    }
+    .fact-value {
+      color: var(--text);
+      font-weight: 800;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .rank-fact {
+      border-color: rgba(79, 70, 229, 0.2);
+      background: #eef2ff;
+    }
+    .rank-fact .fact-value {
+      color: #3730a3;
+    }
+    .venue-line {
+      margin: 0 0 12px;
+      padding: 8px 10px;
+      border: 1px solid rgba(221, 227, 234, 0.9);
+      border-radius: 8px;
+      background: #fbfcfe;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .venue-line strong {
+      color: var(--accent-2);
     }
     .abstract {
       margin: 0;
@@ -204,7 +237,7 @@
     .summary {
       margin-top: 14px;
       padding: 14px 16px;
-      border-radius: 18px;
+      border-radius: 8px;
       background: linear-gradient(180deg, #f4f9f8, #eef8f6);
       border: 1px solid rgba(15, 118, 110, 0.12);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
@@ -247,7 +280,7 @@
     .abstract pre {
       overflow-x: auto;
       padding: 12px 14px;
-      border-radius: 12px;
+      border-radius: 8px;
       background: #f7f8fa;
       border: 1px solid var(--border);
     }
@@ -267,7 +300,7 @@
       gap: 6px;
       max-width: 100%;
       padding: 6px 10px;
-      border-radius: 999px;
+      border-radius: 8px;
       border: 1px solid rgba(221, 227, 234, 0.95);
       background: linear-gradient(180deg, #fafbfc, #f3f7fa);
       color: var(--accent-2);
@@ -281,7 +314,7 @@
     .empty {
       padding: 18px;
       border: 1px dashed var(--border);
-      border-radius: 18px;
+      border-radius: 8px;
       color: var(--muted);
       background: rgba(255, 255, 255, 0.6);
     }
@@ -298,11 +331,11 @@
 <body>
   <main class="wrap">
     <section class="hero">
-      <div class="badge">Flask demo · FTS5 retrieval · Transformer reranker</div>
-      <h1>Scientific literature search demo</h1>
+      <div class="badge">Transformer-powered scientific search</div>
+      <h1>Scientific literature search</h1>
       <p class="subtitle">
-        Search the local SQLite database, inspect reranked results, and preview
-        article metadata directly in the browser.
+        Find relevant papers, compare reranked results, and review venue and
+        citation metadata in one place.
       </p>
     </section>
 
@@ -327,10 +360,6 @@
               <input id="year" name="year" type="text" value="{{ year or '' }}" placeholder="optional" />
             </div>
           </div>
-          <div>
-            <label for="collection">Collection</label>
-              <input id="collection" name="collection" type="text" value="{{ collection or '' }}" placeholder="optional" />
-          </div>
           <button class="btn" type="submit">Search</button>
         </form>
       </aside>
@@ -345,28 +374,51 @@
         {% for paper in results %}
         <article class="paper" data-paper-id="{{ paper.paper_id }}" data-collection="{{ paper.collection or 'local' }}">
           <h3 class="paper-title">{{ paper.title }}</h3>
-          <div class="meta">
-            <span>Paper ID: {{ paper.paper_id }}</span>
-            {% if paper.year %}<span>Year: {{ paper.year }}</span>{% endif %}
-            {% if paper.collection %}<span>Collection: {{ paper.collection }}</span>{% endif %}
-            {% if paper.links %}<span>{{ paper.links|length }} link{{ '' if paper.links|length == 1 else 's' }}</span>{%
-            endif %}
-            {% if paper.score is not none %}<span class="score">Score {{ '%.2f'|format(paper.score * 100) }}%</span>{%
-            endif %}
+          <div class="paper-facts">
+            <div class="fact rank-fact">
+              <span class="fact-label">Rank</span>
+              <span class="fact-value">#{{ paper.rank or loop.index }}</span>
+            </div>
+            <div class="fact">
+              <span class="fact-label">Year</span>
+              <span class="fact-value">{{ paper.year or 'Unknown' }}</span>
+            </div>
+            <div class="fact">
+              <span class="fact-label">Cites</span>
+              <span class="fact-value">{{ "{:,}".format(paper.citation_count) if paper.citation_count is defined and paper.citation_count is not none else 'Unknown' }}</span>
+            </div>
+            {% if paper.score is not none %}
+            <div class="fact">
+              <span class="fact-label">Score</span>
+              <span class="fact-value">{{ '%.2f'|format(paper.score * 100) }}%</span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="venue-line">
+            <strong>Venue:</strong>
+            {% if paper.venue %}
+              {{ paper.venue }}
+            {% elif paper.venue_updated_at %}
+              Preprint / Unpublished
+            {% else %}
+              Unknown
+            {% endif %}
           </div>
           <div class="abstract markdown" data-markdown='{{ (paper.abstract or "No abstract available.") | tojson }}'>
           </div>
           <div class="summary" data-summary-slot>
             <button type="button" class="btn btn-small" data-summary-action
               data-pid="{{ paper.paper_id }}" data-collection="{{ paper.collection or 'local' }}">
-              Generate Summary (LLM)
+              Generate summary
             </button>
           </div>
           {% if paper.links %}
           <div class="links">
             {% for link in paper.links %}
             {% if link %}
-            <a class="link-chip" href="{{ link }}" target="_blank" rel="noreferrer noopener">{{ link }}</a>
+            <a class="link-chip" href="{{ link }}" target="_blank" rel="noreferrer noopener">
+              {{ 'Open paper' if loop.index == 1 else 'Open link ' ~ loop.index }}
+            </a>
             {% endif %}
             {% endfor %}
           </div>
@@ -465,7 +517,7 @@
       const button = card.querySelector('[data-summary-action]');
       if (!button) return;
       button.disabled = disabled;
-      button.textContent = disabled ? 'Generating Summary...' : 'Generate Summary (LLM)';
+      button.textContent = disabled ? 'Generating summary...' : 'Generate summary';
     }
 
     function updateSummaryCard(paperId, summary, sourceKind) {
@@ -506,7 +558,7 @@
       if (slot) {
         slot.classList.remove('is-error', 'is-ready');
         slot.classList.add('is-loading');
-        slot.innerHTML = `<div class="summary-label">Summary</div><p class="summary-text">Generating summary with LLM... Please wait.</p>`;
+        slot.innerHTML = `<div class="summary-label">Summary</div><p class="summary-text">Generating summary... Please wait.</p>`;
       }
 
       try {

@@ -23,6 +23,7 @@ from reranking import load_reranker
 from retrieval.fts5 import FTS5Retriever
 from services.search_service import SearchService
 from services.paper_summary_service import PaperSummaryService
+from services.paper_metadata_enricher import PaperMetadataEnricher
 from services.summarizers import build_summary_model
 
 from api.routes.health import make_health_bp
@@ -62,9 +63,10 @@ def create_app(
     summary_model = build_summary_model(summary_settings, normalize_fn=normalize_text)
 
     summary_service = PaperSummaryService(repo, summary_settings, summary_model)
+    metadata_enricher = PaperMetadataEnricher(repo)
 
     # --- service layer ----------------------------------------------------
-    service = SearchService(repo, retriever, reranker)
+    service = SearchService(repo, retriever, reranker, metadata_enricher)
 
     # --- routes (factory-function pattern) --------------------------------
     app.register_blueprint(make_health_bp(repo))
